@@ -1,26 +1,65 @@
 @import "tailwindcss";
+@import "react-tooltip/dist/react-tooltip.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #1e1e1e;
+    --foreground-primary: #1e1e1e;
+    --foreground-secondary: #858585;
+    --primary: #10639d;
+  }
+
+  .dark {
+    --background: #1e1e1e;
+    --foreground: #ffffff;
+    --foreground-primary: #ffffff;
+    --foreground-secondary: #cccccc;
+    --primary: #10639d;
+
+    /* Side panel */
+    --panel-bg: #333333;
+    --panel-highlight: #ffffff;
+    --panel-inactive: #858585;
+
+    /* Side panel content */
+    --panel-content-bg: #252526;
+    --panel-content-header: #bbbbbb;
+
+    /* Tooltip */
+    --tooltip-bg: #252526;
+    --tooltip-fg: #ffffff;
+    --tooltip-border: #555555;
   }
 }
 
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-primary: var(--foreground-primary);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-primary: var(--primary);
+
+  /* Side panel */
+  --color-panel-bg: var(--panel-bg);
+  --color-panel-highlight: var(--panel-highlight);
+  --color-panel-inactive: var(--panel-inactive);
+
+  /* Side panel content */
+  --color-panel-content-bg: var(--panel-content-bg);
+  --color-panel-content-header: var(--panel-content-header);
+
+  --color-tooltip-bg: var(--tooltip-bg);
+  --color-tooltip-fg: var(--tooltip-fg);
+  --color-tooltip-border: var(--tooltip-border);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: hsl(var(--color-background));
+  color: hsl(var(--color-foreground-primary));
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu",
+    "Droid Sans", "Helvetica Neue", sans-serif;
+  opacity: 1;
 }
