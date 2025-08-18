@@ -5,6 +5,7 @@ import {
   VscCommentDiscussion,
 } from "react-icons/vsc";
 import { AiOutlineSpotify } from "react-icons/ai";
+import { BsAlt, BsShift } from "react-icons/bs";
 
 import Tooltip from "@/app/components/Tooltip";
 
@@ -14,18 +15,56 @@ const icons = [
     icon: <VscFiles size={iconSize} />,
     label: "Explorer",
     id: "explorer",
+    keyboardShortcut: (
+      <span className="flex items-center">
+        <BsAlt className="text-[10px]" />
+        <BsShift className="text-[10px]" />E
+      </span>
+    ),
   },
-  { icon: <VscSearch size={iconSize} />, label: "Search", id: "search" },
+  {
+    icon: <VscSearch size={iconSize} />,
+    label: "Search",
+    id: "search",
+    keyboardShortcut: (
+      <span className="flex items-center">
+        <BsAlt className="text-[10px]" />
+        <BsShift className="text-[10px]" />E
+      </span>
+    ),
+  },
   {
     icon: <VscSourceControl size={iconSize} />,
     label: "Source Control",
     id: "source-control",
+    keyboardShortcut: (
+      <span className="flex items-center">
+        <BsAlt className="text-[10px]" />
+        <BsShift className="text-[10px]" />G
+      </span>
+    ),
   },
-  { icon: <VscCommentDiscussion size={iconSize} />, label: "Chat", id: "chat" },
+  {
+    icon: <VscCommentDiscussion size={iconSize} />,
+    label: "Chat",
+    id: "chat",
+    keyboardShortcut: (
+      <span className="flex items-center">
+        <BsAlt className="text-[10px]" />
+        <BsShift className="text-[10px]" />C
+      </span>
+    ),
+  },
   {
     icon: <AiOutlineSpotify size={iconSize} />,
     label: "Spotify",
     id: "spotify",
+    keyboardShortcut: (
+      <span className="flex items-center">
+        <BsAlt className="text-[10px]" />
+        <BsShift className="text-[10px]" />S
+      </span>
+    ),
   },
 ];
 
@@ -48,7 +87,11 @@ const Sidebar = ({
       {icons.map((item, idx) => (
         <Tooltip
           key={item.label}
-          content={item.label}
+          content={
+            <span className="flex items-center">
+              {item.label} ({item.keyboardShortcut})
+            </span>
+          }
           anchorId={safeAnchorId(item.label)}
         >
           <button

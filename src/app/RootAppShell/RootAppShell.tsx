@@ -1,10 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useHotkeys } from "react-hotkeys-hook";
+
+import { useLayoutContext } from "@/app/context/layout";
 import Sidebar from "./Sidebar";
+import { ExplorerContent } from "./PanelContent";
+import { NavigationTab } from "./Navigation";
+import { navigateToAdjacentEditor } from "./navigateToAdjacentEditor";
 
 const panels = [
-  { id: "explorer", label: "Explorer", content: "Explorer panel content" },
+  {
+    id: "explorer",
+    label: "Explorer",
+    component: ExplorerContent,
+  },
   { id: "search", label: "Search", content: "Search panel content" },
   {
     id: "source-control",
@@ -19,29 +30,50 @@ const panels = [
   { id: "spotify", label: "My Playlists", content: "My Playlists" },
 ];
 
-export default function RootAppShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
   const [activeTab, setActiveTab] = useState(0);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const { isSidebarOpen, toggleSidebar, openEditors, handleCloseEditor } =
+    useLayoutContext();
+
+  useHotkeys("shift+alt+e", () => {
+    handleTabChange(0);
+  });
+
+  useHotkeys("shift+alt+f", () => {
+    handleTabChange(1);
+  });
+
+  useHotkeys("shift+alt+g", () => {
+    handleTabChange(2);
+  });
+
+  useHotkeys("shift+alt+c", () => {
+    handleTabChange(3);
+  });
+
+  useHotkeys("shift+alt+s", () => {
+    handleTabChange(4);
+  });
 
   const handleTabChange = (index: number) => {
     if (index === activeTab) {
-      setPanelOpen((isOpen) => !isOpen);
+      toggleSidebar();
     } else {
       setActiveTab(index);
-      setPanelOpen(true);
+      toggleSidebar(true);
     }
   };
+
+  const hasOpenEditors = openEditors.length > 0;
 
   return (
     <div className="flex">
       <Sidebar active={activeTab} onTabChange={handleTabChange} />
       <div className="flex flex-1">
         {/* Side Panel */}
-        {panelOpen && (
+        {isSidebarOpen && (
           <aside className="bg-panel-content-bg w-80">
             {panels.map((panel, index) => (
               <div
@@ -52,21 +84,52 @@ export default function RootAppShell({
                 className={activeTab === index ? "block" : "hidden"}
               >
                 <div>
-                  <div className="text-foreground-primary flex h-10 items-center px-3">
+                  <div className="flex h-10 items-center px-6">
                     <h2 className="text-panel-content-header text-xs">
                       {panel.label.toUpperCase()}
                     </h2>
                   </div>
+                  <div>{panel.component && <panel.component />}</div>
                 </div>
               </div>
             ))}
           </aside>
         )}
         {/* Main Content */}
-        <main className="bg-background text-foreground-primary flex-1">
-          {children}
-        </main>
+        <div className="flex flex-1 flex-col">
+          <nav
+            className={`h-9 ${
+              hasOpenEditors ? "bg-navigation-bg" : "bg-background"
+            }`}
+          >
+            <ul className="flex h-full items-center gap-0.5">
+              {openEditors.map((editor) => {
+                const isActive = pathname === editor.href;
+                const handleClose = () => {
+                  handleCloseEditor(editor);
+
+                  if (isActive) {
+                    navigateToAdjacentEditor(openEditors, editor, router);
+                  }
+                };
+                return (
+                  <li className="h-full" key={editor.href}>
+                    <NavigationTab
+                      label={editor.label}
+                      href={editor.href}
+                      isActive={isActive}
+                      handleClose={handleClose}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+          <main className="bg-background text-foreground-primary flex-1">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
-}
+};

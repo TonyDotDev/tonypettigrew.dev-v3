@@ -1,0 +1,51 @@
+import Link from "next/link";
+import React from "react";
+import { FaReact } from "react-icons/fa";
+import { VscClose } from "react-icons/vsc";
+
+interface NavigationTabProps {
+  label: string;
+  isActive?: boolean;
+  href: string;
+  handleClose: () => void;
+}
+
+export const NavigationTab = ({
+  label,
+  isActive,
+  href,
+  handleClose,
+}: NavigationTabProps) => {
+  const handleCloseClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    handleClose();
+  };
+
+  return (
+    <Link
+      className={`group text-foreground-primary flex h-full items-center gap-1 px-3 pr-1 text-sm ${
+        isActive ? "bg-background" : "bg-navigation-tab-inactive-bg"
+      }`}
+      href={href}
+    >
+      <div className="flex items-center gap-2">
+        <FaReact className="text-md text-blue-400" aria-hidden />
+        <span
+          className={`mr-0.5 ${isActive ? "text-foreground-primary" : "text-foreground-quaternary"}`}
+        >
+          {label}
+        </span>
+      </div>
+      <button
+        onClick={handleCloseClick}
+        className={`hover:bg-close-button-hover-bg cursor-pointer rounded-md p-0.5 ${
+          isActive ? "visible" : "invisible group-hover:visible"
+        }`}
+      >
+        <VscClose
+          className={`text-lg ${isActive ? "text-foreground" : "text-foreground-quaternary"}`}
+        />
+      </button>
+    </Link>
+  );
+};

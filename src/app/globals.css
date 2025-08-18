@@ -15,6 +15,9 @@
     --foreground: #ffffff;
     --foreground-primary: #ffffff;
     --foreground-secondary: #cccccc;
+    --foreground-tertiary: #aeaeaf;
+    --foreground-quaternary: #969696;
+
     --primary: #10639d;
 
     /* Side panel */
@@ -30,6 +33,14 @@
     --tooltip-bg: #252526;
     --tooltip-fg: #ffffff;
     --tooltip-border: #555555;
+
+    /* Navigation */
+    --navigation-bg: #252526;
+    --navigation-tab-inactive-bg: #2d2d2d;
+
+    --navigation-file-active-bg: #37373c;
+    --close-button-hover-bg: #434343;
+    --navigation-file-hover-bg: #2f2f30;
   }
 }
 
@@ -38,6 +49,9 @@
   --color-foreground: var(--foreground);
   --color-foreground-primary: var(--foreground-primary);
   --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-tertiary: var(--foreground-tertiary);
+  --color-foreground-quaternary: var(--foreground-quaternary);
+
   --color-primary: var(--primary);
 
   /* Side panel */
@@ -52,6 +66,14 @@
   --color-tooltip-bg: var(--tooltip-bg);
   --color-tooltip-fg: var(--tooltip-fg);
   --color-tooltip-border: var(--tooltip-border);
+
+  /* Navigation */
+  --color-navigation-bg: var(--navigation-bg);
+  --color-navigation-tab-inactive-bg: var(--navigation-tab-inactive-bg);
+  --color-close-button-hover-bg: var(--close-button-hover-bg);
+
+  --color-navigation-file-active-bg: var(--navigation-file-active-bg);
+  --color-navigation-file-hover-bg: var(--navigation-file-hover-bg);
 }
 
 body {

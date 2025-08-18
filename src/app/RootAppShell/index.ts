@@ -1,1 +1,2 @@
-export { default } from "./RootAppShell";
+export { RootAppShell } from "./RootAppShell";
+export { navigateToAdjacentEditor } from "./navigateToAdjacentEditor";

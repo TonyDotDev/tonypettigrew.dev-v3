@@ -5,7 +5,7 @@ import "react-tooltip/dist/react-tooltip.css";
 
 interface TooltipProps {
   children: React.ReactNode;
-  content: string;
+  content: string | React.ReactNode;
   anchorId: string;
 }
 
