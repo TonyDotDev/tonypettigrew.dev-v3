@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 
-import { OpenEditor } from "@/app/context/layout";
+import { type Route, routes } from "@/app/routes";
 
 type Router = ReturnType<typeof useRouter>;
 
 export const navigateToAdjacentEditor = (
-  openEditors: OpenEditor[],
-  editor: OpenEditor,
+  openEditors: Route[],
+  editor: Route,
   router: Router,
 ) => {
   const currentIndex = openEditors.findIndex((e) => e.href === editor.href);
@@ -16,6 +16,11 @@ export const navigateToAdjacentEditor = (
 
   if (newEditors.length === 0) {
     router.push("/");
+  } else if (
+    openEditors.find((e) => e.href === "/blog") &&
+    editor.href.includes("/blog/")
+  ) {
+    router.push(routes.blog.href);
   } else if (currentIndex < newEditors.length) {
     router.push(newEditors[currentIndex].href);
   } else {

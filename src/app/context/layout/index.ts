@@ -1,2 +1,2 @@
-export { LayoutProvider, type OpenEditor } from "./LayoutContext";
+export { LayoutProvider } from "./LayoutContext";
 export { useLayoutContext } from "./useLayoutContext";

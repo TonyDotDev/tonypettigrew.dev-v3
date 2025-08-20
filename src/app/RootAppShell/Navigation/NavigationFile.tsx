@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { FaReact } from "react-icons/fa";
 import { VscClose } from "react-icons/vsc";
+
+import { FileTypeIcon, type Label } from "@/app/RootAppShell/Navigation";
+import "./navigation-link.css";
 
 interface NavigationFileProps {
   href: string;
-  label: string;
+  label: Label;
   isActive: boolean;
   handleClose: () => void;
 }
@@ -22,7 +24,7 @@ export const NavigationFile = ({
 
   return (
     <Link
-      className={`group hover:bg-navigation-file-hover-bg flex items-center py-0.5 pl-5.5 ${isActive ? "bg-navigation-file-active-bg" : ""}`}
+      className={`navigation-link group hover:bg-navigation-file-hover-bg flex items-center py-0.5 pl-5.5 ${isActive ? "bg-navigation-file-active-bg" : ""}`}
       href={href}
     >
       <button
@@ -33,10 +35,12 @@ export const NavigationFile = ({
       >
         <VscClose className="text-foreground-secondary text-md" />
       </button>
-      <div className="flex items-center gap-2">
-        <FaReact className="text-md text-blue-400" aria-hidden />
-        <span className="text-foreground-secondary text-sm">{label}</span>
-        <span className="text-foreground-tertiary text-xs italic">{`src/app${href === "/" ? "/home" : href}`}</span>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <FileTypeIcon className="flex-shrink-0" label={label} />
+        <span className="text-foreground-secondary max-w-[100%] min-w-0 truncate text-sm">
+          {label}
+        </span>
+        <span className="text-foreground-tertiary min-w-0 flex-1 truncate text-xs italic">{`src/app${href === "/" ? "/home" : href}`}</span>
       </div>
     </Link>
   );

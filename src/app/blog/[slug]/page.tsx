@@ -1,7 +1,198 @@
-export default function BlogPost() {
-  return (
-    <div>
-      <h1 className="text-4xl font-bold">Blog Post</h1>
-    </div>
+import { client } from "@/sanity/lib/client";
+import { groq } from "next-sanity";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { tomorrow } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import Image from "next/image";
+import { MdCalendarToday, MdAccessTime } from "react-icons/md";
+import Link from "next/link";
+import { Metadata } from "next";
+
+import { formatDate } from "@/lib";
+import { getReadTime, type Post } from "@/app/blog";
+
+interface BlogPost extends Post {
+  body: string;
+}
+
+export default async function BlogPost({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const { slug } = await params;
+
+  const post = await client.fetch<BlogPost>(
+    groq`*[_type == "post" && slug.current == $slug][0] {
+      _id,
+      title,
+      slug,
+      publishedAt,
+      body,
+      mainImage {
+        asset->{ url },
+        alt
+      },
+      author->{
+        name,
+        image {
+          asset->{ url }
+        }
+      },
+      categories[]->{
+        title,
+        slug
+      }
+    }`,
+    {
+      slug,
+    },
   );
+
+  if (!post) {
+    // TODO: Navigate to 404 page AND don't allow a file tab or navigation file to be created in the open editors
+    return <div>Post not found</div>;
+  }
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    author: {
+      "@type": "Person",
+      name: post.author.name,
+    },
+    datePublished: post.publishedAt,
+    // "dateModified": post.updatedAt || post.publishedAt,
+    image: post.mainImage?.asset.url,
+    description: post.body.slice(0, 160) + "...",
+  };
+
+  const readingTime = getReadTime(post.body);
+
+  return (
+    <>
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <header>
+          <h1 className="mb-6 text-4xl font-bold">{post.title}</h1>
+          <div className="mb-6 flex items-center gap-8">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 overflow-hidden rounded-full">
+                <Image
+                  src={post.author.image.asset.url}
+                  alt={post.author.name}
+                  width={60}
+                  height={60}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <span className="text-foreground-primary text-md">
+                {post.author.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MdCalendarToday className="text-foreground-secondary text-md" />
+              <time
+                dateTime={post.publishedAt}
+                className="text-foreground-secondary text-md"
+              >
+                Published on {formatDate(post.publishedAt)}
+              </time>
+            </div>
+            <div className="flex items-center gap-2">
+              <MdAccessTime className="text-foreground-secondary text-md" />
+              <span className="text-foreground-secondary text-md">
+                {readingTime} minutes
+              </span>
+            </div>
+          </div>
+          <ul className="mb-6 flex flex-wrap items-center gap-2">
+            {post.categories.map((category) => (
+              <li className="text-sm" key={category.slug.current}>
+                <Link href={`/blog?category=${category.slug.current}`}>
+                  #{category.title.toLowerCase()}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </header>
+
+        <div className="prose prose-lg max-w-none">
+          <ReactMarkdown
+            components={{
+              code: ({ className, children, ...props }) => {
+                const match = /language-(\w+)/.exec(className || "");
+                const isInline = !match;
+                return !isInline ? (
+                  <SyntaxHighlighter
+                    style={tomorrow}
+                    language={match[1]}
+                    PreTag="div"
+                  >
+                    {String(children).replace(/\n$/, "")}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {post.body}
+          </ReactMarkdown>
+        </div>
+      </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+    </>
+  );
+}
+
+// Add this function to your BlogPost component
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const { slug } = await params;
+
+  const post = await client.fetch<BlogPost>(
+    groq`*[_type == "post" && slug.current == $slug][0] {
+      title,
+      body,
+      mainImage {
+        asset->{ url }
+      },
+      author->{ name }
+    }`,
+    { slug },
+  );
+
+  if (!post) {
+    return { title: "Post not found" };
+  }
+
+  // Create description from body content
+  const description = post.body.slice(0, 160) + "...";
+
+  return {
+    title: post.title,
+    description,
+    openGraph: {
+      title: post.title,
+      description,
+      images: post.mainImage ? [post.mainImage.asset.url] : [],
+      type: "article",
+      authors: [post.author.name],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description,
+      images: post.mainImage ? [post.mainImage.asset.url] : [],
+    },
+  };
 }

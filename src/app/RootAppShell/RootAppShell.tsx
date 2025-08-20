@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 
-import { useLayoutContext } from "@/app/context/layout";
+import { useLayoutContext } from "@/app/context";
 import Sidebar from "./Sidebar";
 import { ExplorerContent } from "./PanelContent";
 import { NavigationTab } from "./Navigation";
@@ -68,6 +68,11 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
 
   const hasOpenEditors = openEditors.length > 0;
 
+  // Don't render layout when in sanity studio
+  if (pathname.includes("/studio")) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex">
       <Sidebar active={activeTab} onTabChange={handleTabChange} />
@@ -96,13 +101,13 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
           </aside>
         )}
         {/* Main Content */}
-        <div className="flex flex-1 flex-col">
+        <div className="flex h-screen flex-1 flex-col">
           <nav
             className={`h-9 ${
               hasOpenEditors ? "bg-navigation-bg" : "bg-background"
             }`}
           >
-            <ul className="flex h-full items-center gap-0.5">
+            <ul className="flex h-full items-center gap-0.5 overflow-x-auto">
               {openEditors.map((editor) => {
                 const isActive = pathname === editor.href;
                 const handleClose = () => {
@@ -113,7 +118,7 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
                   }
                 };
                 return (
-                  <li className="h-full" key={editor.href}>
+                  <li className="h-full flex-shrink-0" key={editor.href}>
                     <NavigationTab
                       label={editor.label}
                       href={editor.href}
@@ -125,7 +130,7 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
               })}
             </ul>
           </nav>
-          <main className="bg-background text-foreground-primary flex-1">
+          <main className="bg-background text-foreground-primary min-h-0 flex-1 overflow-y-auto">
             {children}
           </main>
         </div>
