@@ -25,7 +25,7 @@ export const ExplorerContent = () => {
             };
 
             return (
-              <li key={editor.href}>
+              <li className="flex-shrink-0 overflow-hidden" key={editor.href}>
                 <NavigationFile
                   href={editor.href}
                   label={editor.label}

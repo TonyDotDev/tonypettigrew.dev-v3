@@ -1,10 +1,13 @@
 import Link from "next/link";
 import React from "react";
-import { FaReact } from "react-icons/fa";
 import { VscClose } from "react-icons/vsc";
 
+import { FileTypeIcon } from "./FileTypeIcon";
+import { type Label } from "./getIconName";
+import "./navigation-link.css";
+
 interface NavigationTabProps {
-  label: string;
+  label: Label;
   isActive?: boolean;
   href: string;
   handleClose: () => void;
@@ -23,13 +26,13 @@ export const NavigationTab = ({
 
   return (
     <Link
-      className={`group text-foreground-primary flex h-full items-center gap-1 px-3 pr-1 text-sm ${
+      className={`navigation-link group text-foreground-primary flex h-full items-center gap-1 px-3 pr-1 text-sm ${
         isActive ? "bg-background" : "bg-navigation-tab-inactive-bg"
       }`}
       href={href}
     >
       <div className="flex items-center gap-2">
-        <FaReact className="text-md text-blue-400" aria-hidden />
+        <FileTypeIcon label={label} />
         <span
           className={`mr-0.5 ${isActive ? "text-foreground-primary" : "text-foreground-quaternary"}`}
         >
