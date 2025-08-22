@@ -1,0 +1,415 @@
+---
+description: Next.js 15 App Router specific patterns and best practices
+globs: ["src/app/**/*", "**/*.tsx", "**/*.ts"]
+alwaysApply: false
+---
+
+# Next.js 15 App Router Guidelines
+
+## App Router Fundamentals
+
+### File Conventions
+
+- `page.tsx` - Route segments and pages
+- `layout.tsx` - Shared layouts
+- `loading.tsx` - Loading UI
+- `error.tsx` - Error UI
+- `not-found.tsx` - Not found UI
+- `route.ts` - API routes
+
+### Server Components (Default)
+
+```typescript
+// Server Component - no "use client" directive
+export default async function BlogPage() {
+  const posts = await getAllBlogPosts();
+
+  return (
+    <div>
+      <h1>Blog Posts</h1>
+      <BlogList posts={posts} />
+    </div>
+  );
+}
+```
+
+### Client Components
+
+```typescript
+"use client";
+import { useState } from 'react';
+
+export function BlogSearch() {
+  const [query, setQuery] = useState('');
+
+  return (
+    <input
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search posts..."
+    />
+  );
+}
+```
+
+## Layout Patterns
+
+### Root Layout
+
+```typescript
+// app/layout.tsx
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Tony Pettigrew - Personal Website',
+  description: 'Personal website and blog',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <Providers>
+          <RootAppShell>{children}</RootAppShell>
+        </Providers>
+      </body>
+    </html>
+  );
+}
+```
+
+### Nested Layouts
+
+```typescript
+// app/blog/layout.tsx
+export default function BlogLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="blog-layout">
+      <BlogSidebar />
+      <main>{children}</main>
+    </div>
+  );
+}
+```
+
+## Data Fetching Patterns
+
+### Server-Side Data Fetching
+
+```typescript
+// In page.tsx (Server Component)
+export default async function BlogPage() {
+  // Fetch data on the server
+  const posts = await getAllBlogPosts();
+  const categories = await getAllCategories();
+
+  return (
+    <Blog initialPosts={posts} initialCategories={categories}>
+      <BlogSearch />
+      <BlogList />
+    </Blog>
+  );
+}
+```
+
+### Parallel Data Fetching
+
+```typescript
+export default async function BlogPage() {
+  // Fetch data in parallel
+  const [posts, categories] = await Promise.all([
+    getAllBlogPosts(),
+    getAllCategories(),
+  ]);
+
+  return <BlogList posts={posts} categories={categories} />;
+}
+```
+
+### Streaming and Suspense
+
+```typescript
+import { Suspense } from 'react';
+
+export default function BlogPage() {
+  return (
+    <div>
+      <BlogHeader />
+      <Suspense fallback={<BlogListSkeleton />}>
+        <BlogList />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+## Dynamic Routes
+
+### Dynamic Segments
+
+```typescript
+// app/blog/[slug]/page.tsx
+export default async function BlogPost({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const post = await getBlogPost(params.slug);
+
+  if (!post) {
+    notFound();
+  }
+
+  return <BlogPostContent post={post} />;
+}
+```
+
+### Catch-all Routes
+
+```typescript
+// app/studio/[[...tool]]/page.tsx
+export default function StudioPage({
+  params,
+}: {
+  params: { tool?: string[] };
+}) {
+  return <Studio params={params} />;
+}
+```
+
+### Optional Catch-all Routes
+
+```typescript
+// app/blog/[[...slug]]/page.tsx
+export default function BlogPage({
+  params,
+}: {
+  params: { slug?: string[] };
+}) {
+  if (!params.slug) {
+    return <BlogList />;
+  }
+
+  return <BlogPost slug={params.slug[0]} />;
+}
+```
+
+## Metadata and SEO
+
+### Static Metadata
+
+```typescript
+export const metadata: Metadata = {
+  title: "Blog Posts",
+  description: "Read our latest blog posts",
+  openGraph: {
+    title: "Blog Posts",
+    description: "Read our latest blog posts",
+  },
+};
+```
+
+### Dynamic Metadata
+
+```typescript
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const post = await getBlogPost(params.slug);
+
+  return {
+    title: post.title,
+    description: post.excerpt,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      images: [post.mainImage],
+    },
+  };
+}
+```
+
+## API Routes
+
+### Route Handlers
+
+```typescript
+// app/api/posts/route.ts
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(request: NextRequest) {
+  const posts = await getAllBlogPosts();
+  return NextResponse.json(posts);
+}
+
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const post = await createBlogPost(body);
+  return NextResponse.json(post, { status: 201 });
+}
+```
+
+### Dynamic API Routes
+
+```typescript
+// app/api/posts/[id]/route.ts
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const post = await getBlogPost(params.id);
+
+  if (!post) {
+    return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(post);
+}
+```
+
+## Middleware
+
+### Authentication Middleware
+
+```typescript
+// middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export function middleware(request: NextRequest) {
+  // Check authentication
+  const isAuthenticated = checkAuth(request);
+
+  if (!isAuthenticated && request.nextUrl.pathname.startsWith("/admin")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/admin/:path*"],
+};
+```
+
+## Performance Optimization
+
+### Static Generation
+
+```typescript
+// Generate static params for dynamic routes
+export async function generateStaticParams() {
+  const posts = await getAllBlogPosts();
+
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
+}
+```
+
+### Incremental Static Regeneration
+
+```typescript
+// Revalidate data every hour
+export const revalidate = 3600;
+
+// Or use on-demand revalidation
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  await createBlogPost(body);
+
+  // Revalidate the blog page
+  revalidatePath("/blog");
+
+  return NextResponse.json({ success: true });
+}
+```
+
+### Image Optimization
+
+```typescript
+import Image from 'next/image';
+
+// Optimized images
+<Image
+  src={post.mainImage}
+  alt={post.title}
+  width={800}
+  height={400}
+  priority={isPriority}
+  placeholder="blur"
+  blurDataURL="data:image/jpeg;base64,..."
+/>
+```
+
+## Error Handling
+
+### Error Boundaries
+
+```typescript
+// app/error.tsx
+"use client";
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <div className="error-container">
+      <h2>Something went wrong!</h2>
+      <p>{error.message}</p>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+```
+
+### Not Found Pages
+
+```typescript
+// app/not-found.tsx
+import Link from 'next/link';
+
+export default function NotFound() {
+  return (
+    <div className="not-found">
+      <h2>Page Not Found</h2>
+      <p>Could not find the requested resource.</p>
+      <Link href="/">Return Home</Link>
+    </div>
+  );
+}
+```
+
+### Loading States
+
+```typescript
+// app/loading.tsx
+export default function Loading() {
+  return (
+    <div className="loading">
+      <div className="spinner" />
+      <p>Loading...</p>
+    </div>
+  );
+}
+```
+
+description:
+globs:
+alwaysApply: false
+
+---

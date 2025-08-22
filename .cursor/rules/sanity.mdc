@@ -1,0 +1,574 @@
+---
+description: Sanity CMS integration patterns and GROQ query best practices
+globs: ["src/sanity/**/*", "**/*sanity*", "**/*groq*"]
+alwaysApply: false
+---
+
+# Sanity CMS Guidelines
+
+## Content Schema Design
+
+### Document Types
+
+```typescript
+// postType.ts
+export default {
+  name: "post",
+  title: "Blog Post",
+  type: "document",
+  fields: [
+    {
+      name: "title",
+      title: "Title",
+      type: "string",
+      validation: (Rule: any) => Rule.required().max(100),
+    },
+    {
+      name: "slug",
+      title: "Slug",
+      type: "slug",
+      options: {
+        source: "title",
+        maxLength: 96,
+      },
+      validation: (Rule: any) => Rule.required(),
+    },
+    {
+      name: "author",
+      title: "Author",
+      type: "reference",
+      to: [{ type: "author" }],
+    },
+    {
+      name: "mainImage",
+      title: "Main image",
+      type: "image",
+      options: {
+        hotspot: true,
+      },
+      fields: [
+        {
+          name: "alt",
+          type: "string",
+          title: "Alternative text",
+          description: "Important for SEO and accessibility.",
+        },
+      ],
+    },
+    {
+      name: "categories",
+      title: "Categories",
+      type: "array",
+      of: [{ type: "reference", to: { type: "category" } }],
+    },
+    {
+      name: "publishedAt",
+      title: "Published at",
+      type: "datetime",
+    },
+    {
+      name: "body",
+      title: "Body",
+      type: "blockContent",
+    },
+  ],
+  preview: {
+    select: {
+      title: "title",
+      author: "author.name",
+      media: "mainImage",
+    },
+    prepare(selection: any) {
+      const { author } = selection;
+      return Object.assign({}, selection, {
+        subtitle: author && `by ${author}`,
+      });
+    },
+  },
+};
+```
+
+### Reference Types
+
+```typescript
+// authorType.ts
+export default {
+  name: "author",
+  title: "Author",
+  type: "document",
+  fields: [
+    {
+      name: "name",
+      title: "Name",
+      type: "string",
+    },
+    {
+      name: "slug",
+      title: "Slug",
+      type: "slug",
+      options: {
+        source: "name",
+        maxLength: 96,
+      },
+    },
+    {
+      name: "image",
+      title: "Image",
+      type: "image",
+      options: {
+        hotspot: true,
+      },
+    },
+    {
+      name: "bio",
+      title: "Bio",
+      type: "array",
+      of: [
+        {
+          title: "Block",
+          type: "block",
+          styles: [{ title: "Normal", value: "normal" }],
+          lists: [],
+        },
+      ],
+    },
+  ],
+  preview: {
+    select: {
+      title: "name",
+      media: "image",
+    },
+  },
+};
+```
+
+## GROQ Query Patterns
+
+### Basic Queries
+
+```typescript
+// Get all posts
+const allPostsQuery = groq`*[_type == "post"] | order(publishedAt desc) {
+  _id,
+  title,
+  slug,
+  publishedAt,
+  excerpt,
+  mainImage,
+  author->{
+    name,
+    image
+  },
+  categories[]->{
+    title,
+    slug
+  }
+}`;
+
+// Get single post by slug
+const postQuery = groq`*[_type == "post" && slug.current == $slug][0] {
+  _id,
+  title,
+  slug,
+  publishedAt,
+  body,
+  mainImage,
+  author->{
+    name,
+    image,
+    bio
+  },
+  categories[]->{
+    title,
+    slug
+  }
+}`;
+```
+
+### Filtered Queries
+
+```typescript
+// Search posts with filters
+const searchPostsQuery = groq`*[_type == "post" ${
+  search
+    ? `&& (
+    title match "*${search}*" ||
+    excerpt match "*${search}*" ||
+    body match "*${search}*" ||
+    author->name match "*${search}*" ||
+    categories[]->title match "*${search}*"
+  )`
+    : ""
+} ${
+  category ? `&& "${category}" in categories[]->slug.current` : ""
+}] | order(publishedAt desc) {
+  _id,
+  title,
+  slug,
+  publishedAt,
+  excerpt,
+  mainImage,
+  author->{
+    name,
+    image
+  },
+  categories[]->{
+    title,
+    slug
+  }
+}`;
+```
+
+### Complex Queries
+
+```typescript
+// Get posts with related content
+const postsWithRelatedQuery = groq`*[_type == "post"] | order(publishedAt desc)[0...10] {
+  _id,
+  title,
+  slug,
+  publishedAt,
+  excerpt,
+  mainImage,
+  author->{
+    name,
+    image
+  },
+  categories[]->{
+    title,
+    slug
+  },
+  "relatedPosts": *[_type == "post" && 
+    slug.current != ^.slug.current && 
+    count(categories[@._ref in ^.categories[]._ref]) > 0
+  ] | order(publishedAt desc)[0...3] {
+    _id,
+    title,
+    slug,
+    publishedAt,
+    excerpt
+  }
+}`;
+```
+
+## Client Configuration
+
+### Sanity Client Setup
+
+```typescript
+// lib/sanity/client.ts
+import { createClient } from "next-sanity";
+
+export const client = createClient({
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
+  apiVersion: "2024-01-01",
+  useCdn: process.env.NODE_ENV === "production",
+  perspective: "published",
+});
+
+// Preview client for draft content
+export const previewClient = createClient({
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
+  apiVersion: "2024-01-01",
+  useCdn: false,
+  perspective: "published",
+  token: process.env.SANITY_API_TOKEN,
+});
+```
+
+### Image URL Builder
+
+```typescript
+// lib/sanity/image.ts
+import imageUrlBuilder from "@sanity/image-url";
+import { client } from "./client";
+
+const builder = imageUrlBuilder(client);
+
+export function urlFor(source: any) {
+  return builder.image(source);
+}
+
+// Usage with optimization
+export function getOptimizedImageUrl(
+  image: any,
+  width: number,
+  height: number,
+) {
+  return urlFor(image)
+    .width(width)
+    .height(height)
+    .fit("crop")
+    .crop("focalpoint")
+    .focalPoint(0.5, 0.5)
+    .url();
+}
+```
+
+## Data Fetching Functions
+
+### Server-Side Data Fetching
+
+```typescript
+// lib/sanity/queries.ts
+import { groq } from "next-sanity";
+import { client } from "./client";
+
+export async function getAllBlogPosts(search?: string, category?: string) {
+  const searchFilter = search
+    ? groq`&& (
+        title match "*${search}*" ||
+        excerpt match "*${search}*" ||
+        body match "*${search}*" ||
+        author->name match "*${search}*" ||
+        categories[]->title match "*${search}*"
+      )`
+    : "";
+
+  const categoryFilter = category
+    ? groq`&& "${category}" in categories[]->slug.current`
+    : "";
+
+  const query = groq`*[_type == "post" ${searchFilter} ${categoryFilter}] | order(publishedAt desc) {
+    _id,
+    title,
+    slug,
+    publishedAt,
+    excerpt,
+    mainImage,
+    author->{
+      name,
+      image
+    },
+    categories[]->{
+      title,
+      slug
+    }
+  }`;
+
+  return client.fetch(query);
+}
+
+export async function getBlogPost(slug: string) {
+  const query = groq`*[_type == "post" && slug.current == $slug][0] {
+    _id,
+    title,
+    slug,
+    publishedAt,
+    body,
+    mainImage,
+    author->{
+      name,
+      image,
+      bio
+    },
+    categories[]->{
+      title,
+      slug
+    }
+  }`;
+
+  return client.fetch(query, { slug });
+}
+
+export async function getAllCategories() {
+  const query = groq`*[_type == "category"] | order(title asc) {
+    _id,
+    title,
+    slug,
+    "postCount": count(*[_type == "post" && references(^._id)])
+  }`;
+
+  return client.fetch(query);
+}
+```
+
+## TypeScript Integration
+
+### Type Definitions
+
+```typescript
+// types/sanity.ts
+export interface SanityDocument {
+  _id: string;
+  _type: string;
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+}
+
+export interface SanityImage {
+  asset: {
+    _ref: string;
+    _type: "reference";
+  };
+  alt?: string;
+  caption?: string;
+}
+
+export interface Author extends SanityDocument {
+  _type: "author";
+  name: string;
+  slug: { current: string };
+  image?: SanityImage;
+  bio?: any[]; // Portable Text
+}
+
+export interface Category extends SanityDocument {
+  _type: "category";
+  title: string;
+  slug: { current: string };
+  postCount?: number;
+}
+
+export interface BlogPost extends SanityDocument {
+  _type: "post";
+  title: string;
+  slug: { current: string };
+  publishedAt: string;
+  excerpt?: string;
+  body?: any[]; // Portable Text
+  mainImage?: SanityImage;
+  author?: Author;
+  categories?: Category[];
+  relatedPosts?: BlogPost[];
+}
+```
+
+## Studio Configuration
+
+### Studio Structure
+
+```typescript
+// sanity.config.ts
+import { defineConfig } from "sanity";
+import { deskTool } from "sanity/desk";
+import { visionTool } from "@sanity/vision";
+import { schemaTypes } from "./schemas";
+
+export default defineConfig({
+  name: "default",
+  title: "Tony Pettigrew Personal Website",
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
+  plugins: [deskTool(), visionTool()],
+  schema: {
+    types: schemaTypes,
+  },
+  studio: {
+    components: {
+      // Custom studio components
+    },
+  },
+});
+```
+
+### Custom Studio Components
+
+```typescript
+// components/PreviewPane.tsx
+import { useDocumentOperation } from 'sanity';
+
+export function PreviewPane(props: any) {
+  const { patch, publish } = useDocumentOperation(props.id, props.type);
+
+  return (
+    <div>
+      <h2>Preview</h2>
+      {/* Preview content */}
+    </div>
+  );
+}
+```
+
+## Performance Optimization
+
+### Caching Strategies
+
+```typescript
+// lib/sanity/cache.ts
+import { client } from "./client";
+
+// Cache frequently accessed data
+const cache = new Map();
+
+export async function getCachedData<T>(
+  key: string,
+  queryFn: () => Promise<T>,
+  ttl: number = 5 * 60 * 1000, // 5 minutes
+): Promise<T> {
+  const cached = cache.get(key);
+
+  if (cached && Date.now() - cached.timestamp < ttl) {
+    return cached.data;
+  }
+
+  const data = await queryFn();
+  cache.set(key, { data, timestamp: Date.now() });
+
+  return data;
+}
+```
+
+### Image Optimization
+
+```typescript
+// lib/sanity/image-optimization.ts
+import { urlFor } from "./image";
+
+export function getOptimizedImageProps(image: any, sizes: string) {
+  const baseUrl = urlFor(image).url();
+
+  return {
+    src: baseUrl,
+    srcSet: `${baseUrl}?w=400 400w, ${baseUrl}?w=800 800w, ${baseUrl}?w=1200 1200w`,
+    sizes,
+    alt: image.alt || "",
+  };
+}
+```
+
+## Real-time Updates
+
+### Live Preview
+
+```typescript
+// lib/sanity/live-preview.ts
+import { useLiveQuery } from "@sanity/preview-kit";
+
+export function usePreviewData<T>(
+  initialData: T,
+  query: string,
+  params: Record<string, any> = {},
+): T {
+  const [data] = useLiveQuery(initialData, query, params);
+  return data;
+}
+```
+
+### Webhook Integration
+
+```typescript
+// app/api/revalidate/route.ts
+import { revalidatePath } from "next/cache";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+
+  if (body._type === "post") {
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${body.slug?.current}`);
+  }
+
+  return NextResponse.json({ revalidated: true });
+}
+```
+
+description:
+globs:
+alwaysApply: false
+
+---

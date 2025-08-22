@@ -1,0 +1,139 @@
+---
+description: Guidelines for creating and formatting Cursor rules and metadata
+globs: ["**/*.mdc", "**/*.cursorrules"]
+alwaysApply: false
+---
+
+```
+
+### Metadata Options
+
+#### Rule Types
+
+- **Always**: `alwaysApply: true` - Always included in model context
+- **Auto Attached**: `globs: ["**/*.tsx"]` - Included when files matching patterns are referenced
+- **Agent Requested**: `alwaysApply: false` with description - AI decides whether to include
+- **Manual**: `alwaysApply: false` - Only included when explicitly mentioned with @ruleName
+
+#### Glob Patterns
+
+- **File types**: `["**/*.tsx", "**/*.ts"]` for TypeScript files
+- **Directories**: `["src/components/**/*"]` for specific directories
+- **Multiple patterns**: Combine patterns in array for broader coverage
+
+## Content Guidelines
+
+### Structure
+
+1. **Clear title**: Use descriptive, action-oriented titles
+2. **Overview**: Brief explanation of the rule's purpose
+3. **Guidelines**: Specific, actionable instructions
+4. **Examples**: Concrete examples showing proper usage
+5. **References**: Links to external resources when relevant
+
+### Writing Style
+
+- **Be specific**: Avoid vague guidance, provide concrete instructions
+- **Use action verbs**: "Always use", "Never do", "Must include"
+- **Include examples**: Show both good and bad examples
+- **Keep focused**: Each rule should cover one specific area
+- **Stay under 500 lines**: Split large rules into multiple, composable rules
+
+### Best Practices
+
+- **Reference files**: Use `@filename.ts` to include additional context
+- **Use checklists**: For complex processes, provide step-by-step checklists
+- **Include templates**: Provide ready-to-use templates when appropriate
+- **Cross-reference**: Link to related rules using `@ruleName`
+
+## File Organization
+
+### Directory Structure
+
+```
+
+.cursor/
+├── rules/
+│ ├── general.mdc # General project guidelines
+│ ├── frontend.mdc # Frontend-specific rules
+│ ├── backend.mdc # Backend-specific rules
+│ └── templates.mdc # Template and boilerplate rules
+
+````
+
+### Nested Rules
+
+- **Project-wide**: Place in `.cursor/rules/`
+- **Directory-specific**: Create `.cursor/rules/` in subdirectories
+- **Auto-attachment**: Nested rules automatically attach to files in their directory
+
+## Examples
+
+### Good Rule Structure
+
+```yaml
+---
+description: React component standards and best practices
+globs: ["**/*.tsx", "**/*.jsx"]
+alwaysApply: false
+---
+
+# React Component Guidelines
+
+## Component Structure
+- Always use functional components with hooks
+- Define props interface at the top of the file
+- Export components as named exports
+- Use TypeScript for all new components
+
+## Naming Conventions
+- Use PascalCase for component names
+- Use camelCase for props and variables
+- Use kebab-case for CSS classes
+
+@component-template.tsx
+````
+
+### Referencing Files
+
+```yaml
+---
+description: API validation standards
+globs: ["**/api/**/*.ts"]
+alwaysApply: false
+---
+
+# API Validation Guidelines
+
+- Use zod for all input validation
+- Define return types with zod schemas
+- Export types generated from schemas
+
+@validation-schema.ts
+@api-response-types.ts
+```
+
+## Maintenance
+
+### Regular Review
+
+- **Update rules**: Keep rules current with project changes
+- **Remove outdated**: Delete rules that are no longer relevant
+- **Consolidate**: Merge similar rules to reduce redundancy
+- **Test effectiveness**: Verify rules are being applied correctly
+
+### Version Control
+
+- **Commit rule changes**: Include rule updates in regular commits
+- **Document changes**: Explain why rules were modified
+- **Review impact**: Consider how rule changes affect the team
+
+## References
+
+- [Cursor Rules Documentation](https://docs.cursor.com/en/context/rules)
+- [MDC Format Specification](https://docs.cursor.com/en/context/rules#rule-anatomy)
+  description:
+  globs:
+  alwaysApply: false
+
+---

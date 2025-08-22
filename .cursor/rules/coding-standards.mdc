@@ -1,0 +1,204 @@
+---
+description: TypeScript and React coding standards with component patterns and best practices
+globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"]
+alwaysApply: false
+---
+
+# Coding Standards
+
+## TypeScript Standards
+
+### Type Safety
+
+- Use strict TypeScript configuration
+- Define explicit return types for functions
+- Use interfaces for object shapes, types for unions/primitives
+- Avoid `any` type - use `unknown` or proper typing
+- Use generic constraints where appropriate
+
+### Naming Conventions
+
+- **Components**: PascalCase (e.g., `BlogPost`, `UserProfile`)
+- **Functions**: camelCase (e.g., `getUserData`, `handleSubmit`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `API_ENDPOINTS`)
+- **Files**: kebab-case (e.g., `blog-post.tsx`, `user-profile.tsx`)
+- **Directories**: kebab-case (e.g., `blog-posts/`, `user-management/`)
+
+### Component Structure
+
+```typescript
+// 1. Imports (React, Next.js, third-party, local)
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+
+// 2. Type definitions
+interface ComponentProps {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}
+
+// 3. Component definition - Use const for all components except pages
+export const Component = ({ title, description, children }: ComponentProps) => {
+  // 4. State and hooks
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 5. Event handlers
+  const handleClick = () => {
+    // Implementation
+  };
+
+  // 6. Render
+  return (
+    <div>
+      <h1>{title}</h1>
+      {description && <p>{description}</p>}
+      {children}
+    </div>
+  );
+};
+
+// Page components use default export function
+export default function PageComponent() {
+  return <Component title="Page Title" />;
+}
+```
+
+## React Best Practices
+
+### Component Declaration Patterns
+
+```typescript
+// ✅ Good: Use const for regular components
+export const BlogCard = ({ post }: BlogCardProps) => {
+  return <article>{/* component content */}</article>;
+};
+
+// ✅ Good: Use default export function for page components
+export default function BlogPage() {
+  return <div>{/* page content */}</div>;
+}
+
+// ❌ Avoid: Function declarations for regular components
+export function BlogCard({ post }: BlogCardProps) {
+  return <article>{/* component content */}</article>;
+}
+
+// ✅ Good: Memoized components
+export const MemoizedComponent = memo(function MemoizedComponent({ data }: Props) {
+  return <div>{/* component content */}</div>;
+});
+
+// ✅ Good: Forwarded ref components
+export const ForwardedComponent = forwardRef<HTMLDivElement, Props>(
+  ({ children, ...props }, ref) => {
+    return (
+      <div ref={ref} {...props}>
+        {children}
+      </div>
+    );
+  }
+);
+```
+
+### Hooks Usage
+
+- Use custom hooks for reusable logic
+- Follow hooks naming convention (use prefix)
+- Keep hooks focused and single-purpose
+- Use proper dependency arrays in useEffect
+
+### State Management
+
+- Use local state for component-specific data
+- Use React Query for server state
+- Use Context for shared state across components
+- Avoid prop drilling - use composition or context
+
+### Performance
+
+- Use React.memo for expensive components
+- Use useCallback for event handlers passed to children
+- Use useMemo for expensive calculations
+- Implement proper loading and error states
+
+## Code Organization
+
+### File Structure
+
+```
+src/
+├── app/                    # Next.js App Router
+├── components/            # Reusable components
+│   ├── ui/               # Basic UI components
+│   └── features/         # Feature-specific components
+├── hooks/                # Custom React hooks
+├── lib/                  # Utility functions
+├── types/                # TypeScript type definitions
+└── constants/            # Application constants
+```
+
+### Import Order
+
+1. React and Next.js imports
+2. Third-party library imports
+3. Local component imports
+4. Local utility imports
+5. Type imports
+
+### Export Patterns
+
+- Use named exports for components
+- Use default exports for pages
+- Export types from dedicated type files
+- Use barrel exports (index.ts) for clean imports
+
+## Error Handling
+
+### Try-Catch Patterns
+
+```typescript
+try {
+  const data = await fetchData();
+  return data;
+} catch (error) {
+  console.error("Failed to fetch data:", error);
+  throw new Error("Unable to load data");
+}
+```
+
+### Error Boundaries
+
+- Implement error boundaries for React components
+- Provide fallback UI for error states
+- Log errors appropriately
+- Handle async errors gracefully
+
+## Code Comments
+
+### When to Comment
+
+- Complex business logic
+- Non-obvious implementation details
+- API integration points
+- Performance optimizations
+
+### Comment Style
+
+```typescript
+/**
+ * Fetches user data from the API with caching
+ * @param userId - The unique identifier for the user
+ * @returns Promise<UserData> - The user data or null if not found
+ */
+async function fetchUserData(userId: string): Promise<UserData | null> {
+  // Implementation
+}
+```
+
+description:
+globs:
+alwaysApply: false
+
+---
