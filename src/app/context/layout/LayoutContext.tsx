@@ -51,9 +51,17 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
     if (!hasOpenEditor) {
       const isMd = pathname.includes("/blog/");
 
+      const labelName = isMd
+        ? pathname.replace("/blog/", "")
+        : pathname.replace("/", "");
+
+      if (labelName === "") {
+        return;
+      }
+
       const label: Route["label"] = isMd
-        ? `${pathname.replace("/blog/", "")}.md`
-        : `${pathname.replace("/", "")}.tsx`;
+        ? `${labelName}.md`
+        : `${labelName}.tsx`;
 
       handleOpenEditor({
         label,

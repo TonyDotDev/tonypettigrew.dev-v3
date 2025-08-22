@@ -5,11 +5,13 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import Image from "next/image";
 import { MdCalendarToday, MdAccessTime } from "react-icons/md";
-import Link from "next/link";
 import { Metadata } from "next";
+import Link from "next/link";
 
 import { formatDate } from "@/lib";
 import { getReadTime, type Post } from "@/app/blog";
+import { Categories } from "@/app/blog";
+import { HashNavigationHandler } from "./HashNavigationHandler";
 
 interface BlogPost extends Post {
   body: string;
@@ -70,84 +72,91 @@ export default async function BlogPost({
 
   const readingTime = getReadTime(post.body);
 
-  return (
-    <>
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <header>
-          <h1 className="mb-6 text-4xl font-bold">{post.title}</h1>
-          <div className="mb-6 flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 overflow-hidden rounded-full">
-                <Image
-                  src={post.author.image.asset.url}
-                  alt={post.author.name}
-                  width={60}
-                  height={60}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <span className="text-foreground-primary text-md">
-                {post.author.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MdCalendarToday className="text-foreground-secondary text-md" />
-              <time
-                dateTime={post.publishedAt}
-                className="text-foreground-secondary text-md"
-              >
-                Published on {formatDate(post.publishedAt)}
-              </time>
-            </div>
-            <div className="flex items-center gap-2">
-              <MdAccessTime className="text-foreground-secondary text-md" />
-              <span className="text-foreground-secondary text-md">
-                {readingTime} minutes
-              </span>
-            </div>
-          </div>
-          <ul className="mb-6 flex flex-wrap items-center gap-2">
-            {post.categories.map((category) => (
-              <li className="text-sm" key={category.slug.current}>
-                <Link href={`/blog?category=${category.slug.current}`}>
-                  #{category.title.toLowerCase()}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </header>
+  const generateId = (children: React.ReactNode) => {
+    return children?.toString().toLowerCase().replace(/\s+/g, "-");
+  };
 
-        <div className="prose prose-lg max-w-none">
-          <ReactMarkdown
-            components={{
-              code: ({ className, children, ...props }) => {
-                const match = /language-(\w+)/.exec(className || "");
-                const isInline = !match;
-                return !isInline ? (
-                  <SyntaxHighlighter
-                    style={tomorrow}
-                    language={match[1]}
-                    PreTag="div"
-                  >
-                    {String(children).replace(/\n$/, "")}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
-            {post.body}
-          </ReactMarkdown>
+  return (
+    <HashNavigationHandler>
+      <header>
+        <h1 className="mb-6 text-4xl font-bold">{post.title}</h1>
+        <div className="mb-6 flex items-center gap-8">
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 overflow-hidden rounded-full">
+              <Image
+                src={post.author.image.asset.url}
+                alt={post.author.name}
+                width={60}
+                height={60}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <span className="text-foreground-primary text-md">
+              {post.author.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MdCalendarToday className="text-foreground-secondary text-md" />
+            <time
+              dateTime={post.publishedAt}
+              className="text-foreground-secondary text-md"
+            >
+              Published on {formatDate(post.publishedAt)}
+            </time>
+          </div>
+          <div className="flex items-center gap-2">
+            <MdAccessTime className="text-foreground-secondary text-md" />
+            <span className="text-foreground-secondary text-md">
+              {readingTime} min read
+            </span>
+          </div>
         </div>
+        <div className="mb-6">
+          <Categories categories={post.categories} />
+        </div>
+      </header>
+
+      <div className="prose prose-lg max-w-none">
+        <ReactMarkdown
+          components={{
+            h1: ({ children }) => <h1 id={generateId(children)}>{children}</h1>,
+            h2: ({ children }) => <h2 id={generateId(children)}>{children}</h2>,
+            h3: ({ children }) => <h3 id={generateId(children)}>{children}</h3>,
+            h4: ({ children }) => <h4 id={generateId(children)}>{children}</h4>,
+            h5: ({ children }) => <h5 id={generateId(children)}>{children}</h5>,
+            h6: ({ children }) => <h6 id={generateId(children)}>{children}</h6>,
+            code: ({ className, children, ...props }) => {
+              const match = /language-(\w+)/.exec(className || "");
+              const isInline = !match;
+              return !isInline ? (
+                <SyntaxHighlighter
+                  style={tomorrow}
+                  language={match[1]}
+                  PreTag="div"
+                >
+                  {String(children).replace(/\n$/, "")}
+                </SyntaxHighlighter>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            },
+            a: ({ href, children }) => (
+              <Link href={href || "#"} className="no-underline">
+                {children}
+              </Link>
+            ),
+          }}
+        >
+          {post.body}
+        </ReactMarkdown>
       </div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-    </>
+    </HashNavigationHandler>
   );
 }
 

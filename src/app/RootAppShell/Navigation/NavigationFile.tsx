@@ -2,7 +2,6 @@ import Link from "next/link";
 import { VscClose } from "react-icons/vsc";
 
 import { FileTypeIcon, type Label } from "@/app/RootAppShell/Navigation";
-import "./navigation-link.css";
 
 interface NavigationFileProps {
   href: string;
@@ -24,7 +23,7 @@ export const NavigationFile = ({
 
   return (
     <Link
-      className={`navigation-link group hover:bg-navigation-file-hover-bg flex items-center py-0.5 pl-5.5 ${isActive ? "bg-navigation-file-active-bg" : ""}`}
+      className={`navigation-link group hover:bg-navigation-file-hover-bg flex items-center py-0.5 pl-5.5 no-underline ${isActive ? "bg-navigation-file-active-bg" : ""}`}
       href={href}
     >
       <button

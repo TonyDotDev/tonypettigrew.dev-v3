@@ -130,8 +130,8 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
               })}
             </ul>
           </nav>
-          <main className="bg-background text-foreground-primary min-h-0 flex-1 overflow-y-auto">
-            {children}
+          <main className="bg-background text-foreground-primary smooth-scroll min-h-0 flex-1 overflow-y-auto">
+            <div className="mx-auto max-w-2xl px-4 py-8">{children}</div>
           </main>
         </div>
       </div>
