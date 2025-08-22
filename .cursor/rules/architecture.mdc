@@ -1,0 +1,259 @@
+---
+description: Next.js 15 App Router architecture patterns and component design principles
+globs: ["**/*.tsx", "**/*.ts", "src/app/**/*"]
+alwaysApply: false
+---
+
+# Architecture Patterns
+
+## Next.js 15 App Router Architecture
+
+### Directory Structure
+
+```
+src/app/
+├── layout.tsx              # Root layout
+├── page.tsx                # Home page
+├── globals.css             # Global styles
+├── blog/                   # Blog feature
+│   ├── page.tsx           # Blog listing
+│   ├── [slug]/            # Dynamic blog posts
+│   │   └── page.tsx       # Individual post
+│   └── Blog/              # Compound components
+├── portfolio/              # Portfolio feature
+│   └── page.tsx           # Portfolio page
+├── contact/                # Contact feature
+│   └── page.tsx           # Contact page
+└── studio/                 # Sanity Studio
+    └── [[...tool]]/       # Studio routes
+```
+
+### Layout Patterns
+
+- Use nested layouts for shared UI elements
+- Implement error boundaries at layout level
+- Use loading.tsx for Suspense boundaries
+- Implement not-found.tsx for 404 pages
+
+### Server vs Client Components
+
+```typescript
+// Server Component (default)
+export default async function BlogPage() {
+  const posts = await getBlogPosts();
+  return <BlogList posts={posts} />;
+}
+
+// Client Component (when needed)
+"use client";
+export function BlogSearch() {
+  const [query, setQuery] = useState("");
+  return <input value={query} onChange={(e) => setQuery(e.target.value)} />;
+}
+```
+
+## Component Architecture
+
+### Compound Component Pattern
+
+```typescript
+// Context for shared state
+const BlogContext = createContext<BlogContextType | undefined>(undefined);
+
+// Main component
+export function Blog({ children, initialData }: BlogProps) {
+  return (
+    <BlogProvider initialData={initialData}>
+      {children}
+    </BlogProvider>
+  );
+}
+
+// Sub-components
+Blog.Search = BlogSearch;
+Blog.List = BlogList;
+Blog.Skeleton = BlogSkeleton;
+
+// Usage
+<Blog initialData={posts}>
+  <Blog.Search />
+  <Blog.List />
+</Blog>
+```
+
+### Component Composition
+
+- Prefer composition over inheritance
+- Use children prop for flexible layouts
+- Implement render props for complex logic
+- Use higher-order components sparingly
+
+### State Management Patterns
+
+```typescript
+// Local state for component-specific data
+const [isOpen, setIsOpen] = useState(false);
+
+// Context for shared state across components
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+// React Query for server state
+const { data, isLoading, error } = useQuery({
+  queryKey: ["posts"],
+  queryFn: getBlogPosts,
+});
+```
+
+## Data Flow Architecture
+
+### Server-Side Data Fetching
+
+```typescript
+// In page.tsx (Server Component)
+export default async function BlogPage() {
+  const posts = await getAllBlogPosts();
+  const categories = await getAllCategories();
+
+  return (
+    <Blog initialPosts={posts} initialCategories={categories}>
+      <BlogSearch />
+      <BlogList />
+    </Blog>
+  );
+}
+```
+
+### Client-Side Data Updates
+
+```typescript
+// In client components
+const { mutate } = useMutation({
+  mutationFn: updatePost,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
+  },
+});
+```
+
+## Routing Architecture
+
+### Dynamic Routes
+
+```typescript
+// app/blog/[slug]/page.tsx
+export default async function BlogPost({ params }: { params: { slug: string } }) {
+  const post = await getBlogPost(params.slug);
+  if (!post) notFound();
+
+  return <BlogPostContent post={post} />;
+}
+```
+
+### Route Groups
+
+```typescript
+// app/(marketing)/about/page.tsx
+// app/(dashboard)/admin/page.tsx
+```
+
+### Middleware Patterns
+
+```typescript
+// middleware.ts
+export function middleware(request: NextRequest) {
+  // Authentication checks
+  // Redirects
+  // Headers modification
+}
+```
+
+## Performance Architecture
+
+### Code Splitting
+
+- Use dynamic imports for large components
+- Implement route-based code splitting
+- Use React.lazy for component-level splitting
+
+### Caching Strategy
+
+```typescript
+// Static generation with revalidation
+export const revalidate = 3600; // 1 hour
+
+// Incremental Static Regeneration
+export async function generateStaticParams() {
+  const posts = await getAllBlogPosts();
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
+}
+```
+
+### Image Optimization
+
+```typescript
+import Image from 'next/image';
+
+// Optimized images with Sanity
+<Image
+  src={urlFor(post.mainImage).url()}
+  alt={post.title}
+  width={800}
+  height={400}
+  priority={isPriority}
+/>
+```
+
+## Error Handling Architecture
+
+### Error Boundaries
+
+```typescript
+// app/error.tsx
+"use client";
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <h2>Something went wrong!</h2>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+```
+
+### Loading States
+
+```typescript
+// app/loading.tsx
+export default function Loading() {
+  return <BlogListSkeleton />;
+}
+```
+
+## Security Architecture
+
+### Input Validation
+
+- Validate all user inputs
+- Use TypeScript for type safety
+- Implement proper sanitization
+- Use Content Security Policy headers
+
+### Authentication Patterns
+
+- Implement proper session management
+- Use secure cookies for authentication
+- Implement CSRF protection
+- Validate permissions at route level
+  description:
+  globs:
+  alwaysApply: false
+
+---

@@ -1,0 +1,397 @@
+---
+description: TypeScript strict mode guidelines and type safety best practices
+globs: ["**/*.ts", "**/*.tsx"]
+alwaysApply: false
+---
+
+# TypeScript Guidelines
+
+## Type Safety Standards
+
+### Strict Configuration
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true
+  }
+}
+```
+
+### Type Definitions
+
+```typescript
+// Use interfaces for object shapes
+interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  publishedAt: Date;
+  author: Author;
+  categories: Category[];
+}
+
+// Use types for unions and primitives
+type Status = "draft" | "published" | "archived";
+type ID = string;
+type Timestamp = number;
+
+// Use const assertions for literal types
+const STATUSES = ["draft", "published", "archived"] as const;
+type Status = (typeof STATUSES)[number];
+```
+
+## Component Typing
+
+### Props Interface
+
+```typescript
+interface BlogPostProps {
+  post: BlogPost;
+  showAuthor?: boolean;
+  onEdit?: (post: BlogPost) => void;
+  children?: React.ReactNode;
+}
+
+export function BlogPost({
+  post,
+  showAuthor = false,
+  onEdit,
+  children,
+}: BlogPostProps) {
+  // Component implementation
+}
+```
+
+### Event Handlers
+
+```typescript
+interface FormProps {
+  onSubmit: (data: FormData) => void;
+  onChange: (field: keyof FormData, value: string) => void;
+}
+
+const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+  // Implementation
+};
+
+const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = event.target;
+  onChange(name as keyof FormData, value);
+};
+```
+
+### Generic Components
+
+```typescript
+interface ListProps<T> {
+  items: T[];
+  renderItem: (item: T, index: number) => React.ReactNode;
+  keyExtractor: (item: T) => string;
+}
+
+export function List<T>({ items, renderItem, keyExtractor }: ListProps<T>) {
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li key={keyExtractor(item)}>
+          {renderItem(item, index)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## API and Data Typing
+
+### API Response Types
+
+```typescript
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  message: string;
+}
+
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Usage
+const response: ApiResponse<BlogPost[]> = await fetch("/api/posts");
+const posts = response.data;
+```
+
+### Sanity CMS Types
+
+```typescript
+interface SanityImage {
+  asset: {
+    _ref: string;
+    _type: "reference";
+  };
+  alt?: string;
+  caption?: string;
+}
+
+interface SanityDocument {
+  _id: string;
+  _type: string;
+  _createdAt: string;
+  _updatedAt: string;
+  _rev: string;
+}
+
+interface BlogPost extends SanityDocument {
+  _type: "post";
+  title: string;
+  slug: { current: string };
+  content: any[]; // Portable Text
+  mainImage?: SanityImage;
+  author: { _ref: string };
+  categories: { _ref: string }[];
+}
+```
+
+## Hook Typing
+
+### Custom Hooks
+
+```typescript
+interface UseLocalStorageOptions<T> {
+  defaultValue?: T;
+  serializer?: (value: T) => string;
+  deserializer?: (value: string) => T;
+}
+
+function useLocalStorage<T>(
+  key: string,
+  options: UseLocalStorageOptions<T> = {},
+): [T | undefined, (value: T) => void] {
+  // Implementation
+}
+
+// Usage
+const [theme, setTheme] = useLocalStorage<"light" | "dark">("theme", {
+  defaultValue: "light",
+});
+```
+
+### Async Hooks
+
+```typescript
+interface UseQueryResult<T> {
+  data: T | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+}
+
+function useQuery<T>(
+  queryKey: string[],
+  queryFn: () => Promise<T>,
+): UseQueryResult<T> {
+  // Implementation
+}
+```
+
+## Error Handling Types
+
+### Error Types
+
+```typescript
+class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code?: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+class ValidationError extends Error {
+  constructor(
+    message: string,
+    public field: string,
+    public value: unknown,
+  ) {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+// Usage
+try {
+  const data = await fetchData();
+  return data;
+} catch (error) {
+  if (error instanceof ApiError) {
+    // Handle API errors
+  } else if (error instanceof ValidationError) {
+    // Handle validation errors
+  } else {
+    // Handle unknown errors
+  }
+}
+```
+
+## Utility Types
+
+### Common Utility Types
+
+```typescript
+// Make all properties optional
+type PartialBlogPost = Partial<BlogPost>;
+
+// Make all properties required
+type RequiredBlogPost = Required<BlogPost>;
+
+// Pick specific properties
+type BlogPostSummary = Pick<BlogPost, "id" | "title" | "excerpt">;
+
+// Omit specific properties
+type BlogPostWithoutId = Omit<BlogPost, "id">;
+
+// Extract property types
+type BlogPostTitle = BlogPost["title"];
+type BlogPostCategories = BlogPost["categories"];
+
+// Conditional types
+type NonNullableFields<T> = {
+  [K in keyof T]: NonNullable<T[K]>;
+};
+```
+
+### Advanced Utility Types
+
+```typescript
+// Deep partial
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+// Extract function return type
+type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
+
+// Extract promise type
+type Awaited<T> = T extends Promise<infer U> ? U : T;
+
+// Component props type
+type ComponentProps<T> = T extends React.ComponentType<infer P> ? P : never;
+```
+
+## Type Guards
+
+### Custom Type Guards
+
+```typescript
+function isBlogPost(obj: unknown): obj is BlogPost {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "title" in obj &&
+    "content" in obj &&
+    "publishedAt" in obj
+  );
+}
+
+function isApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError;
+}
+
+// Usage
+if (isBlogPost(data)) {
+  // TypeScript knows data is BlogPost
+  console.log(data.title);
+}
+```
+
+### Discriminated Unions
+
+```typescript
+interface LoadingState {
+  status: 'loading';
+}
+
+interface SuccessState<T> {
+  status: 'success';
+  data: T;
+}
+
+interface ErrorState {
+  status: 'error';
+  error: Error;
+}
+
+type AsyncState<T> = LoadingState | SuccessState<T> | ErrorState;
+
+// Usage
+function renderState(state: AsyncState<BlogPost[]>) {
+  switch (state.status) {
+    case 'loading':
+      return <LoadingSpinner />;
+    case 'success':
+      return <BlogList posts={state.data} />;
+    case 'error':
+      return <ErrorMessage error={state.error} />;
+  }
+}
+```
+
+## Performance Types
+
+### Memoization Types
+
+```typescript
+import { useMemo, useCallback } from "react";
+
+// Memoized value
+const expensiveValue = useMemo(() => {
+  return computeExpensiveValue(data);
+}, [data]);
+
+// Memoized callback
+const handleClick = useCallback(
+  (id: string) => {
+    onItemClick(id);
+  },
+  [onItemClick],
+);
+```
+
+### Lazy Loading Types
+
+```typescript
+import { lazy, Suspense } from 'react';
+
+const LazyComponent = lazy(() => import('./HeavyComponent'));
+
+// Usage with proper typing
+<Suspense fallback={<LoadingSpinner />}>
+  <LazyComponent />
+</Suspense>
+```
+
+description:
+globs:
+alwaysApply: false
+
+---

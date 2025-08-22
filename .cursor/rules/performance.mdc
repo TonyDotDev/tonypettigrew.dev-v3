@@ -1,0 +1,681 @@
+---
+description: Performance optimization guidelines for Core Web Vitals and user experience
+globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"]
+alwaysApply: false
+---
+
+# Performance Guidelines
+
+## Core Web Vitals Optimization
+
+### Largest Contentful Paint (LCP)
+
+```typescript
+// Optimize LCP with proper image loading
+import Image from "next/image";
+
+export function BlogHero({ post }: { post: BlogPost }) {
+  return (
+    <div className="hero-section">
+      <Image
+        src={post.mainImage.url}
+        alt={post.mainImage.alt}
+        width={1200}
+        height={600}
+        priority // Load above-the-fold images immediately
+        placeholder="blur"
+        blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/..."
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      />
+      <h1>{post.title}</h1>
+    </div>
+  );
+}
+
+// Preload critical resources
+export function BlogPage() {
+  return (
+    <>
+      <link
+        rel="preload"
+        href="/fonts/inter-var.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin="anonymous"
+      />
+      {/* Page content */}
+    </>
+  );
+}
+```
+
+### First Input Delay (FID) / Interaction to Next Paint (INP)
+
+```typescript
+// Optimize JavaScript execution with code splitting
+import { lazy, Suspense } from "react";
+
+// Lazy load non-critical components
+const HeavyComponent = lazy(() => import("./HeavyComponent"));
+const CommentSection = lazy(() => import("./CommentSection"));
+
+export function BlogPost({ post }: { post: BlogPost }) {
+  return (
+    <article>
+      <header>
+        <h1>{post.title}</h1>
+        <p>{post.excerpt}</p>
+      </header>
+
+      <div>{post.content}</div>
+
+      {/* Lazy load comment section */}
+      <Suspense fallback={<div>Loading comments...</div>}>
+        <CommentSection postId={post.id} />
+      </Suspense>
+    </article>
+  );
+}
+
+// Debounce expensive operations
+import { useMemo, useCallback } from "react";
+import debounce from "lodash/debounce";
+
+export function SearchInput({ onSearch }: { onSearch: (query: string) => void }) {
+  const debouncedSearch = useMemo(
+    () => debounce((query: string) => {
+      onSearch(query);
+    }, 300),
+    [onSearch]
+  );
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSearch(e.target.value);
+  }, [debouncedSearch]);
+
+  return (
+    <input
+      type="search"
+      onChange={handleChange}
+      placeholder="Search posts..."
+    />
+  );
+}
+```
+
+### Cumulative Layout Shift (CLS)
+
+```typescript
+// Prevent layout shifts with proper sizing
+export function BlogCard({ post }: { post: BlogPost }) {
+  return (
+    <div className="blog-card">
+      {/* Reserve space for images to prevent CLS */}
+      <div className="aspect-w-16 aspect-h-9">
+        <Image
+          src={post.mainImage.url}
+          alt={post.mainImage.alt}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
+      </div>
+
+      {/* Fixed height for content to prevent shifts */}
+      <div className="h-32 p-4">
+        <h3 className="line-clamp-2">{post.title}</h3>
+        <p className="line-clamp-3 text-sm text-gray-600">{post.excerpt}</p>
+      </div>
+    </div>
+  );
+}
+
+// Use CSS to prevent layout shifts
+/* globals.css */
+.aspect-w-16 {
+  position: relative;
+  width: 100%;
+}
+
+.aspect-w-16::before {
+  content: "";
+  display: block;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+```
+
+## React Performance Optimization
+
+### Component Memoization
+
+```typescript
+import { memo, useMemo, useCallback } from "react";
+
+// Memoize expensive components
+interface BlogListProps {
+  posts: BlogPost[];
+  onPostClick: (post: BlogPost) => void;
+}
+
+export const BlogList = memo(function BlogList({ posts, onPostClick }: BlogListProps) {
+  // Memoize expensive calculations
+  const sortedPosts = useMemo(() => {
+    return posts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  }, [posts]);
+
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handlePostClick = useCallback((post: BlogPost) => {
+    onPostClick(post);
+  }, [onPostClick]);
+
+  return (
+    <div className="blog-list">
+      {sortedPosts.map((post) => (
+        <BlogCard
+          key={post.id}
+          post={post}
+          onClick={handlePostClick}
+        />
+      ))}
+    </div>
+  );
+});
+
+// Optimize child components
+interface BlogCardProps {
+  post: BlogPost;
+  onClick: (post: BlogPost) => void;
+}
+
+export const BlogCard = memo(function BlogCard({ post, onClick }: BlogCardProps) {
+  const handleClick = useCallback(() => {
+    onClick(post);
+  }, [post, onClick]);
+
+  return (
+    <article onClick={handleClick}>
+      {/* Card content */}
+    </article>
+  );
+});
+```
+
+### Virtual Scrolling for Large Lists
+
+```typescript
+import { FixedSizeList as List } from "react-window";
+
+interface VirtualizedBlogListProps {
+  posts: BlogPost[];
+  height: number;
+}
+
+export function VirtualizedBlogList({ posts, height }: VirtualizedBlogListProps) {
+  const ItemRenderer = useCallback(({ index, style }: any) => (
+    <div style={style}>
+      <BlogCard post={posts[index]} />
+    </div>
+  ), [posts]);
+
+  return (
+    <List
+      height={height}
+      itemCount={posts.length}
+      itemSize={200} // Height of each item
+      width="100%"
+    >
+      {ItemRenderer}
+    </List>
+  );
+}
+```
+
+## Data Fetching Optimization
+
+### Server-Side Optimization
+
+```typescript
+// Parallel data fetching
+export default async function BlogPage() {
+  // Fetch data in parallel
+  const [posts, categories, featuredPost] = await Promise.all([
+    getAllBlogPosts(),
+    getAllCategories(),
+    getFeaturedPost(),
+  ]);
+
+  return (
+    <div>
+      <FeaturedPost post={featuredPost} />
+      <BlogList posts={posts} />
+      <CategoryList categories={categories} />
+    </div>
+  );
+}
+
+// Incremental Static Regeneration
+export const revalidate = 3600; // Revalidate every hour
+
+// Static generation with fallback
+export async function generateStaticParams() {
+  const posts = await getAllBlogPosts();
+
+  // Generate most popular posts statically
+  return posts.slice(0, 50).map((post) => ({
+    slug: post.slug.current,
+  }));
+}
+```
+
+### Client-Side Caching
+
+```typescript
+// React Query for efficient data fetching
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+export function useBlogPosts(search?: string, category?: string) {
+  return useQuery({
+    queryKey: ["posts", search, category],
+    queryFn: () => getAllBlogPosts(search, category),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+  });
+}
+
+// Prefetch related data
+export function BlogCard({ post }: { post: BlogPost }) {
+  const queryClient = useQueryClient();
+
+  const handleMouseEnter = useCallback(() => {
+    // Prefetch post details on hover
+    queryClient.prefetchQuery({
+      queryKey: ["post", post.slug.current],
+      queryFn: () => getBlogPost(post.slug.current),
+    });
+  }, [post.slug.current, queryClient]);
+
+  return (
+    <div onMouseEnter={handleMouseEnter}>
+      {/* Card content */}
+    </div>
+  );
+}
+```
+
+### Background Data Updates
+
+```typescript
+// Update data in the background
+export function useBackgroundSync() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const interval = setInterval(
+      () => {
+        // Silently update data in background
+        queryClient.invalidateQueries({
+          queryKey: ["posts"],
+          refetchType: "none", // Don't show loading state
+        });
+      },
+      5 * 60 * 1000,
+    ); // Every 5 minutes
+
+    return () => clearInterval(interval);
+  }, [queryClient]);
+}
+```
+
+## Bundle Optimization
+
+### Code Splitting Strategies
+
+```typescript
+// Route-based code splitting
+import { lazy } from "react";
+
+const BlogPage = lazy(() => import("./blog/page"));
+const PortfolioPage = lazy(() => import("./portfolio/page"));
+const ContactPage = lazy(() => import("./contact/page"));
+
+// Component-based code splitting
+const RichTextEditor = lazy(() => import("./RichTextEditor"));
+const Chart = lazy(() => import("./Chart"));
+
+// Feature-based code splitting
+const AdminPanel = lazy(() =>
+  import("./AdminPanel").then(module => ({ default: module.AdminPanel }))
+);
+
+// Dynamic imports with error handling
+export function DynamicComponent() {
+  const [Component, setComponent] = useState<React.ComponentType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    import("./HeavyComponent")
+      .then((module) => {
+        setComponent(() => module.default);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError("Failed to load component");
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!Component) return null;
+
+  return <Component />;
+}
+```
+
+### Tree Shaking Optimization
+
+```typescript
+// Import only what you need
+import { debounce } from "lodash/debounce"; // Good
+import debounce from "lodash/debounce"; // Good
+import _ from "lodash"; // Bad - imports entire library
+
+// Use ES modules for better tree shaking
+import { format } from "date-fns/format"; // Good
+import { format, parseISO } from "date-fns"; // Good
+import * as dateFns from "date-fns"; // Bad
+
+// Create barrel exports carefully
+// utils/index.ts
+export { formatDate } from "./date";
+export { validateEmail } from "./validation";
+// Don't re-export everything
+```
+
+## Image Optimization
+
+### Next.js Image Component
+
+```typescript
+import Image from "next/image";
+
+// Responsive images with proper sizing
+export function ResponsiveImage({ src, alt, className }: ImageProps) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={800}
+      height={600}
+      className={className}
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      quality={85} // Good balance between quality and file size
+      placeholder="blur"
+      blurDataURL="data:image/jpeg;base64,..."
+    />
+  );
+}
+
+// Generate blur data URLs
+export function generateBlurDataURL(width: number, height: number): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  ctx.fillStyle = "#f3f4f6";
+  ctx.fillRect(0, 0, width, height);
+
+  return canvas.toDataURL();
+}
+```
+
+### Image Optimization with Sanity
+
+```typescript
+import { urlFor } from "@/sanity/lib/image";
+
+export function SanityImage({ image, alt, ...props }: SanityImageProps) {
+  return (
+    <Image
+      src={urlFor(image)
+        .width(800)
+        .height(600)
+        .quality(85)
+        .format("webp")
+        .url()}
+      alt={alt}
+      {...props}
+    />
+  );
+}
+
+// Responsive image builder
+export function getResponsiveImageProps(image: any, sizes: string) {
+  const baseUrl = urlFor(image).quality(85).format("webp");
+
+  return {
+    src: baseUrl.width(800).url(),
+    srcSet: [
+      `${baseUrl.width(400).url()} 400w`,
+      `${baseUrl.width(800).url()} 800w`,
+      `${baseUrl.width(1200).url()} 1200w`,
+      `${baseUrl.width(1600).url()} 1600w`,
+    ].join(", "),
+    sizes,
+  };
+}
+```
+
+## Font Optimization
+
+### Next.js Font Optimization
+
+```typescript
+// app/layout.tsx
+import { Inter, Playfair_Display } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="font-sans">
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### Font Loading Strategy
+
+```css
+/* globals.css */
+/* Optimize font loading */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Prevent layout shift with font metrics */
+.font-sans {
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+/* Size adjust for consistent metrics */
+@font-face {
+  font-family: "Inter";
+  size-adjust: 100.06%;
+}
+```
+
+## Runtime Performance
+
+### Memory Management
+
+```typescript
+// Cleanup resources properly
+export function useImagePreloader(urls: string[]) {
+  const [loadedImages, setLoadedImages] = useState(new Set<string>());
+
+  useEffect(() => {
+    const imagePromises = urls.map((url) => {
+      return new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(url);
+        img.onerror = reject;
+        img.src = url;
+      });
+    });
+
+    Promise.allSettled(imagePromises).then((results) => {
+      const loaded = results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => (result as PromiseFulfilledResult<string>).value);
+
+      setLoadedImages(new Set(loaded));
+    });
+
+    // Cleanup on unmount
+    return () => {
+      setLoadedImages(new Set());
+    };
+  }, [urls]);
+
+  return loadedImages;
+}
+
+// Efficient event listeners
+export function useScrollPosition() {
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const updateScrollY = () => {
+      setScrollY(window.scrollY);
+      ticking = false;
+    };
+
+    const requestTick = () => {
+      if (!ticking) {
+        requestAnimationFrame(updateScrollY);
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", requestTick, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", requestTick);
+    };
+  }, []);
+
+  return scrollY;
+}
+```
+
+## Performance Monitoring
+
+### Web Vitals Tracking
+
+```typescript
+// lib/analytics.ts
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from "web-vitals";
+
+function sendToAnalytics(metric: any) {
+  // Send to your analytics service
+  console.log(metric);
+}
+
+export function initWebVitals() {
+  getCLS(sendToAnalytics);
+  getFID(sendToAnalytics);
+  getFCP(sendToAnalytics);
+  getLCP(sendToAnalytics);
+  getTTFB(sendToAnalytics);
+}
+
+// Performance observer
+export function usePerformanceMonitoring() {
+  useEffect(() => {
+    if (typeof window !== "undefined" && "PerformanceObserver" in window) {
+      const observer = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          console.log(`${entry.name}: ${entry.duration}ms`);
+        });
+      });
+
+      observer.observe({
+        entryTypes: ["navigation", "paint", "largest-contentful-paint"],
+      });
+
+      return () => observer.disconnect();
+    }
+  }, []);
+}
+```
+
+### Performance Budget
+
+```typescript
+// Performance budget configuration
+const PERFORMANCE_BUDGET = {
+  // Bundle size limits (in KB)
+  javascript: 200,
+  css: 50,
+  images: 500,
+
+  // Core Web Vitals targets
+  lcp: 2500, // milliseconds
+  fid: 100, // milliseconds
+  cls: 0.1, // score
+
+  // Other metrics
+  ttfb: 800, // milliseconds
+  fcp: 1800, // milliseconds
+};
+
+export function checkPerformanceBudget(metrics: any) {
+  const violations = [];
+
+  Object.entries(PERFORMANCE_BUDGET).forEach(([key, limit]) => {
+    if (metrics[key] > limit) {
+      violations.push(`${key}: ${metrics[key]} exceeds limit of ${limit}`);
+    }
+  });
+
+  return violations;
+}
+```

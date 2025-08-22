@@ -1,0 +1,678 @@
+---
+description: Security best practices for Next.js applications and data protection
+globs: ["**/*.tsx", "**/*.ts", "**/*.js", "**/*.jsx"]
+alwaysApply: false
+---
+
+# Security Guidelines
+
+## Input Validation and Sanitization
+
+### Server-Side Validation
+
+```typescript
+// API route with validation
+import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+
+const createPostSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().min(1),
+  authorId: z.string().uuid(),
+  categories: z.array(z.string()).max(10),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // Validate input
+    const validatedData = createPostSchema.parse(body);
+
+    // Process validated data
+    const post = await createPost(validatedData);
+
+    return NextResponse.json(post, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input", details: error.errors },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+```
+
+### Client-Side Validation
+
+```typescript
+// Form validation with sanitization
+import DOMPurify from "isomorphic-dompurify";
+
+interface FormData {
+  name: string;
+  email: string;
+  message: string;
+}
+
+function validateAndSanitizeForm(data: FormData): FormData {
+  return {
+    name: DOMPurify.sanitize(data.name.trim()),
+    email: data.email.toLowerCase().trim(),
+    message: DOMPurify.sanitize(data.message.trim()),
+  };
+}
+
+export function ContactForm() {
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Sanitize input before sending
+    const sanitizedData = validateAndSanitizeForm(formData);
+
+    // Additional validation
+    if (!sanitizedData.name || !sanitizedData.email || !sanitizedData.message) {
+      setError("All fields are required");
+      return;
+    }
+
+    await submitForm(sanitizedData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* Form fields */}
+    </form>
+  );
+}
+```
+
+## Authentication and Authorization
+
+### Environment Variables Security
+
+```typescript
+// env.ts - Type-safe environment variables
+import { z } from "zod";
+
+const envSchema = z.object({
+  NEXT_PUBLIC_SANITY_PROJECT_ID: z.string(),
+  NEXT_PUBLIC_SANITY_DATASET: z.string(),
+  SANITY_API_TOKEN: z.string(),
+  NEXTAUTH_SECRET: z.string().min(32),
+  NEXTAUTH_URL: z.string().url(),
+});
+
+export const env = envSchema.parse(process.env);
+
+// Never expose sensitive data to client
+export const publicEnv = {
+  SANITY_PROJECT_ID: env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+  SANITY_DATASET: env.NEXT_PUBLIC_SANITY_DATASET,
+};
+```
+
+### Session Management
+
+```typescript
+// auth/session.ts
+import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
+
+const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
+
+export async function createSession(userId: string) {
+  const token = await new SignJWT({ userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("24h")
+    .sign(secretKey);
+
+  cookies().set("session", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 86400, // 24 hours
+  });
+}
+
+export async function verifySession(): Promise<string | null> {
+  const session = cookies().get("session")?.value;
+
+  if (!session) return null;
+
+  try {
+    const { payload } = await jwtVerify(session, secretKey);
+    return payload.userId as string;
+  } catch {
+    return null;
+  }
+}
+```
+
+### Route Protection
+
+```typescript
+// middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { verifySession } from "./lib/auth/session";
+
+export async function middleware(request: NextRequest) {
+  // Protect admin routes
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    const userId = await verifySession();
+
+    if (!userId) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // Additional role-based checks
+    const user = await getUserById(userId);
+    if (!user || user.role !== "admin") {
+      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    }
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/admin/:path*"],
+};
+```
+
+## XSS Prevention
+
+### Content Security Policy
+
+```typescript
+// next.config.ts
+const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.sanity.io",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https://cdn.sanity.io",
+              "font-src 'self'",
+              "connect-src 'self' https://api.sanity.io",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
+  },
+};
+```
+
+### Safe HTML Rendering
+
+```typescript
+// Safe HTML rendering with sanitization
+import DOMPurify from "isomorphic-dompurify";
+
+interface SafeHTMLProps {
+  content: string;
+  className?: string;
+}
+
+export function SafeHTML({ content, className }: SafeHTMLProps) {
+  const sanitizedContent = DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ["p", "br", "strong", "em", "ul", "ol", "li", "a"],
+    ALLOWED_ATTR: ["href", "target", "rel"],
+    ALLOW_DATA_ATTR: false,
+  });
+
+  return (
+    <div
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+    />
+  );
+}
+
+// For user-generated content
+export function UserContent({ content }: { content: string }) {
+  // Strip all HTML for user comments
+  const textOnly = DOMPurify.sanitize(content, { ALLOWED_TAGS: [] });
+
+  return <p>{textOnly}</p>;
+}
+```
+
+## CSRF Protection
+
+### API Route Protection
+
+```typescript
+// lib/csrf.ts
+import { headers } from "next/headers";
+
+export function validateCSRF(request: Request) {
+  const headersList = headers();
+  const origin = headersList.get("origin");
+  const referer = headersList.get("referer");
+
+  const allowedOrigins = [
+    process.env.NEXTAUTH_URL,
+    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  ].filter(Boolean);
+
+  if (
+    !origin ||
+    !allowedOrigins.some((allowed) => origin.startsWith(allowed))
+  ) {
+    throw new Error("Invalid origin");
+  }
+
+  if (
+    referer &&
+    !allowedOrigins.some((allowed) => referer.startsWith(allowed))
+  ) {
+    throw new Error("Invalid referer");
+  }
+}
+
+// Usage in API routes
+export async function POST(request: NextRequest) {
+  try {
+    validateCSRF(request);
+
+    // Process request
+    const body = await request.json();
+    // ...
+  } catch (error) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+}
+```
+
+## Data Protection
+
+### Sensitive Data Handling
+
+```typescript
+// types/user.ts
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  // Sensitive fields that should never be exposed
+  passwordHash?: never;
+  resetToken?: never;
+  privateKey?: never;
+}
+
+export interface UserDB {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  passwordHash: string;
+  resetToken?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Data transformation to remove sensitive fields
+export function sanitizeUser(user: UserDB): User {
+  const { passwordHash, resetToken, ...sanitizedUser } = user;
+  return sanitizedUser;
+}
+```
+
+### Database Query Security
+
+```typescript
+// lib/database/queries.ts
+import { z } from "zod";
+
+// Parameterized queries to prevent injection
+export async function getUserByEmail(email: string): Promise<User | null> {
+  // Validate input
+  const emailSchema = z.string().email();
+  const validEmail = emailSchema.parse(email);
+
+  // Use parameterized query
+  const query = groq`*[_type == "user" && email == $email][0]`;
+  const user = await client.fetch(query, { email: validEmail });
+
+  return user ? sanitizeUser(user) : null;
+}
+
+// Rate limiting for sensitive operations
+const rateLimiter = new Map<string, { count: number; resetTime: number }>();
+
+export function checkRateLimit(
+  identifier: string,
+  maxAttempts = 5,
+  windowMs = 900000,
+): boolean {
+  const now = Date.now();
+  const record = rateLimiter.get(identifier);
+
+  if (!record || now > record.resetTime) {
+    rateLimiter.set(identifier, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (record.count >= maxAttempts) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
+```
+
+## File Upload Security
+
+### Safe File Upload
+
+```typescript
+// lib/upload.ts
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+export function validateFile(file: File): { valid: boolean; error?: string } {
+  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+    return { valid: false, error: "Invalid file type" };
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: "File too large" };
+  }
+
+  return { valid: true };
+}
+
+export async function uploadFile(file: File): Promise<string> {
+  const validation = validateFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  // Generate secure filename
+  const extension = file.name.split(".").pop();
+  const filename = `${crypto.randomUUID()}.${extension}`;
+
+  // Upload to secure storage
+  const url = await uploadToStorage(file, filename);
+
+  return url;
+}
+```
+
+## Dependency Security
+
+### Package Security Scanning
+
+```json
+// package.json
+{
+  "scripts": {
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix",
+    "security:check": "npm audit --audit-level high"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.0",
+    "dompurify": "^3.0.0"
+  }
+}
+```
+
+### Dependency Validation
+
+```typescript
+// scripts/validate-deps.ts
+import { readFileSync } from "fs";
+
+const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+
+// Check for known vulnerable packages
+const vulnerablePackages = [
+  "lodash", // Use lodash-es instead
+  "moment", // Use date-fns instead
+];
+
+const dependencies = {
+  ...packageJson.dependencies,
+  ...packageJson.devDependencies,
+};
+
+vulnerablePackages.forEach((pkg) => {
+  if (dependencies[pkg]) {
+    console.warn(`⚠️  Found potentially vulnerable package: ${pkg}`);
+  }
+});
+```
+
+## Error Handling Security
+
+### Safe Error Messages
+
+```typescript
+// lib/errors.ts
+export class AppError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number = 500,
+    public isOperational: boolean = true,
+  ) {
+    super(message);
+    this.name = this.constructor.name;
+  }
+}
+
+export function handleError(error: unknown): {
+  message: string;
+  statusCode: number;
+} {
+  // Log full error for debugging
+  console.error("Error:", error);
+
+  if (error instanceof AppError) {
+    return {
+      message: error.message,
+      statusCode: error.statusCode,
+    };
+  }
+
+  // Never expose internal errors to users
+  return {
+    message: "An unexpected error occurred",
+    statusCode: 500,
+  };
+}
+
+// Usage in API routes
+export async function GET() {
+  try {
+    const data = await fetchData();
+    return NextResponse.json(data);
+  } catch (error) {
+    const { message, statusCode } = handleError(error);
+    return NextResponse.json({ error: message }, { status: statusCode });
+  }
+}
+```
+
+## Security Headers
+
+### Security Middleware
+
+```typescript
+// middleware/security.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export function securityHeaders(request: NextRequest) {
+  const response = NextResponse.next();
+
+  // Security headers
+  response.headers.set("X-DNS-Prefetch-Control", "off");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Cross-Origin-Embedder-Policy", "require-corp");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+
+  // Remove server information
+  response.headers.delete("Server");
+  response.headers.delete("X-Powered-By");
+
+  return response;
+}
+```
+
+## API Security
+
+### Rate Limiting
+
+```typescript
+// lib/rate-limit.ts
+import { LRUCache } from "lru-cache";
+
+type Options = {
+  uniqueTokenPerInterval?: number;
+  interval?: number;
+};
+
+export default function rateLimit(options: Options = {}) {
+  const tokenCache = new LRUCache({
+    max: options.uniqueTokenPerInterval || 500,
+    ttl: options.interval || 60000,
+  });
+
+  return {
+    check: (identifier: string, limit: number) =>
+      new Promise<void>((resolve, reject) => {
+        const tokenCount = (tokenCache.get(identifier) as number[]) || [0];
+        if (tokenCount[0] === 0) {
+          tokenCache.set(identifier, tokenCount);
+        }
+        tokenCount[0] += 1;
+
+        const currentUsage = tokenCount[0];
+        const isRateLimited = currentUsage >= limit;
+
+        if (isRateLimited) {
+          reject(new Error("Rate limit exceeded"));
+        } else {
+          resolve();
+        }
+      }),
+  };
+}
+
+// Usage
+const limiter = rateLimit({
+  interval: 60 * 1000, // 60 seconds
+  uniqueTokenPerInterval: 500, // Limit each IP to 500 requests
+});
+
+export async function POST(request: NextRequest) {
+  const ip = request.ip ?? "127.0.0.1";
+
+  try {
+    await limiter.check(ip, 10); // 10 requests per minute
+  } catch {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
+
+  // Process request
+}
+```
+
+## Security Checklist
+
+### Pre-deployment Security Review
+
+```typescript
+/*
+Security Checklist:
+
+□ Input Validation
+  □ All user inputs validated on server-side
+  □ SQL injection prevention (parameterized queries)
+  □ XSS prevention (content sanitization)
+  □ File upload validation
+
+□ Authentication & Authorization
+  □ Secure session management
+  □ Strong password requirements
+  □ Role-based access control
+  □ JWT token security
+
+□ Data Protection
+  □ Sensitive data encryption
+  □ Secure cookie settings
+  □ Environment variable protection
+  □ Database security
+
+□ Network Security
+  □ HTTPS enforcement
+  □ Security headers configured
+  □ CSP policy implemented
+  □ CORS properly configured
+
+□ Error Handling
+  □ No sensitive data in error messages
+  □ Proper error logging
+  □ Rate limiting implemented
+  □ Graceful error responses
+
+□ Dependencies
+  □ Regular security audits
+  □ Known vulnerabilities patched
+  □ Minimal dependency surface
+  □ License compliance
+
+□ Monitoring
+  □ Security event logging
+  □ Anomaly detection
+  □ Regular security scans
+  □ Incident response plan
+*/
+```

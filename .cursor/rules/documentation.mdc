@@ -1,0 +1,630 @@
+---
+description: Documentation standards for components, APIs, and project maintenance
+globs: ["**/*.md", "**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"]
+alwaysApply: false
+---
+
+# Documentation Guidelines
+
+## Code Documentation
+
+### Function Documentation
+
+````typescript
+/**
+ * Fetches blog posts from Sanity CMS with optional filtering
+ *
+ * @param search - Optional search term to filter posts by title, content, or author
+ * @param category - Optional category slug to filter posts by category
+ * @returns Promise resolving to an array of blog posts
+ *
+ * @example
+ * ```typescript
+ * // Get all posts
+ * const allPosts = await getAllBlogPosts();
+ *
+ * // Search for posts about React
+ * const reactPosts = await getAllBlogPosts("React");
+ *
+ * // Get posts in technology category
+ * const techPosts = await getAllBlogPosts(undefined, "technology");
+ * ```
+ */
+export async function getAllBlogPosts(
+  search?: string,
+  category?: string,
+): Promise<BlogPost[]> {
+  // Implementation details...
+}
+
+/**
+ * Custom hook for managing local storage with TypeScript support
+ *
+ * @template T - The type of the stored value
+ * @param key - The localStorage key
+ * @param initialValue - Default value if no stored value exists
+ * @returns Tuple of [value, setValue] similar to useState
+ *
+ * @example
+ * ```typescript
+ * const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'light');
+ * const [user, setUser] = useLocalStorage<User | null>('user', null);
+ * ```
+ */
+export function useLocalStorage<T>(
+  key: string,
+  initialValue: T,
+): [T, (value: T) => void] {
+  // Implementation...
+}
+````
+
+### Component Documentation
+
+````typescript
+/**
+ * BlogCard - Displays a preview of a blog post with image, title, and excerpt
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <BlogCard
+ *   post={blogPost}
+ *   showAuthor={true}
+ *   onClick={(post) => router.push(`/blog/${post.slug.current}`)}
+ * />
+ * ```
+ */
+interface BlogCardProps {
+  /** The blog post data to display */
+  post: BlogPost;
+  /** Whether to show author information */
+  showAuthor?: boolean;
+  /** Callback when card is clicked */
+  onClick?: (post: BlogPost) => void;
+  /** Additional CSS classes */
+  className?: string;
+}
+
+export function BlogCard({
+  post,
+  showAuthor = false,
+  onClick,
+  className
+}: BlogCardProps) {
+  return (
+    <article
+      className={`blog-card ${className || ""}`}
+      onClick={() => onClick?.(post)}
+    >
+      {/* Component implementation */}
+    </article>
+  );
+}
+
+/**
+ * Compound component for blog functionality with shared context
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <Blog initialSearch="" initialCategory="" initialCategories={categories}>
+ *   <BlogSearch />
+ *   <BlogList posts={posts} />
+ * </Blog>
+ * ```
+ */
+export const Blog = {
+  /** Main blog context provider */
+  Provider: BlogProvider,
+  /** Search input component */
+  Search: BlogSearch,
+  /** Blog posts list component */
+  List: BlogList,
+  /** Loading skeleton component */
+  Skeleton: BlogListSkeleton,
+};
+````
+
+### Type Documentation
+
+```typescript
+/**
+ * Represents a blog post from Sanity CMS
+ */
+export interface BlogPost {
+  /** Unique identifier from Sanity */
+  _id: string;
+  /** Post title */
+  title: string;
+  /** URL slug for routing */
+  slug: { current: string };
+  /** Publication date in ISO format */
+  publishedAt: string;
+  /** Short description/summary */
+  excerpt?: string;
+  /** Main content as Portable Text */
+  body?: PortableTextBlock[];
+  /** Featured image */
+  mainImage?: SanityImage;
+  /** Post author */
+  author?: Author;
+  /** Associated categories */
+  categories?: Category[];
+}
+
+/**
+ * Configuration options for blog context
+ */
+export interface BlogContextConfig {
+  /** Initial search term */
+  initialSearch: string;
+  /** Initial category filter */
+  initialCategory: string;
+  /** Available categories */
+  initialCategories: Category[];
+  /** Enable debugging */
+  debug?: boolean;
+}
+```
+
+## API Documentation
+
+### API Route Documentation
+
+````typescript
+/**
+ * GET /api/posts
+ *
+ * Retrieves a list of blog posts with optional filtering
+ *
+ * Query Parameters:
+ * - search (string, optional): Search term for filtering posts
+ * - category (string, optional): Category slug for filtering
+ * - limit (number, optional): Maximum number of posts to return (default: 10)
+ * - offset (number, optional): Number of posts to skip for pagination
+ *
+ * Returns:
+ * - 200: Array of blog posts
+ * - 400: Invalid query parameters
+ * - 500: Server error
+ *
+ * @example
+ * ```
+ * GET /api/posts?search=react&limit=5
+ * GET /api/posts?category=technology
+ * ```
+ */
+export async function GET(request: NextRequest) {
+  // Implementation...
+}
+
+/**
+ * POST /api/posts
+ *
+ * Creates a new blog post
+ *
+ * Request Body:
+ * ```json
+ * {
+ *   "title": "string (required)",
+ *   "content": "string (required)",
+ *   "authorId": "string (required)",
+ *   "categories": "string[] (optional)"
+ * }
+ * ```
+ *
+ * Returns:
+ * - 201: Created post object
+ * - 400: Validation errors
+ * - 401: Unauthorized
+ * - 500: Server error
+ */
+export async function POST(request: NextRequest) {
+  // Implementation...
+}
+````
+
+### GROQ Query Documentation
+
+```typescript
+/**
+ * GROQ query to fetch all blog posts with author and category data
+ *
+ * Features:
+ * - Includes author name and image
+ * - Expands category references
+ * - Orders by publication date (newest first)
+ * - Supports search filtering across multiple fields
+ * - Supports category filtering
+ *
+ * @param search - Optional search term
+ * @param category - Optional category slug
+ */
+const blogPostsQuery = groq`
+  *[_type == "post" 
+    ${
+      search
+        ? `&& (
+      title match "*${search}*" ||
+      excerpt match "*${search}*" ||
+      body match "*${search}*" ||
+      author->name match "*${search}*" ||
+      categories[]->title match "*${search}*"
+    )`
+        : ""
+    }
+    ${category ? `&& "${category}" in categories[]->slug.current` : ""}
+  ] | order(publishedAt desc) {
+    _id,
+    title,
+    slug,
+    publishedAt,
+    excerpt,
+    mainImage,
+    author->{
+      name,
+      image
+    },
+    categories[]->{
+      title,
+      slug
+    }
+  }
+`;
+```
+
+## README Documentation
+
+### Project README Structure
+
+````markdown
+# Tony Pettigrew - Personal Website
+
+Modern personal website built with Next.js 15, TypeScript, and Sanity CMS.
+
+## Features
+
+- 🚀 **Next.js 15** with App Router
+- 📝 **Blog System** with Sanity CMS
+- 🔍 **Search & Filtering** with debounced queries
+- 🎨 **Tailwind CSS v4** for styling
+- ♿ **WCAG 2.2 Accessibility** compliant
+- ⚡ **Optimized Performance** (Core Web Vitals)
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+
+# Run development server
+npm run dev
+```
+````
+
+## Architecture
+
+```
+src/
+├── app/                 # Next.js App Router
+│   ├── blog/           # Blog functionality
+│   │   ├── Blog/       # Compound components
+│   │   └── [slug]/     # Dynamic post pages
+│   └── components/     # Shared components
+├── lib/                # Utility functions
+└── sanity/            # CMS configuration
+```
+
+## Development
+
+### Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run test` - Run tests
+- `npm run lint` - Run ESLint
+
+### Environment Variables
+
+```env
+NEXT_PUBLIC_SANITY_PROJECT_ID=your_project_id
+NEXT_PUBLIC_SANITY_DATASET=production
+SANITY_API_TOKEN=your_api_token
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make changes following the coding standards
+4. Add tests for new functionality
+5. Submit a pull request
+
+See [Contributing Guidelines](./docs/contributing.md) for details.
+
+````
+
+### Component README
+```markdown
+# Blog Components
+
+Compound component system for blog functionality with shared context.
+
+## Usage
+
+```tsx
+import { Blog, BlogSearch, BlogList } from './Blog';
+
+<Blog initialSearch="" initialCategory="" initialCategories={categories}>
+  <BlogSearch />
+  <BlogList posts={posts} />
+</Blog>
+````
+
+## Components
+
+### Blog (Provider)
+
+Main context provider for blog functionality.
+
+**Props:**
+
+- `initialSearch: string` - Initial search value
+- `initialCategory: string` - Initial category filter
+- `initialCategories: Category[]` - Available categories
+- `children: ReactNode` - Child components
+
+### BlogSearch
+
+Search input with category filtering.
+
+**Features:**
+
+- Debounced search (300ms)
+- Category dropdown
+- URL state management
+- Loading states
+
+### BlogList
+
+Displays list of blog posts with loading states.
+
+**Props:**
+
+- `posts: BlogPost[]` - Array of posts to display
+
+**Features:**
+
+- Loading skeletons
+- Empty state handling
+- Accessibility support
+
+## Context API
+
+```tsx
+const {
+  searchValue,
+  setSearchValue,
+  categoryValue,
+  setCategoryValue,
+  isLoading,
+  setIsLoading,
+  categories,
+} = useBlogContext();
+```
+
+## Testing
+
+```bash
+# Run component tests
+npm test Blog
+
+# Run accessibility tests
+npm run test:a11y Blog
+```
+
+````
+
+## Inline Documentation
+
+### Code Comments
+```typescript
+export function BlogSearch() {
+  const router = useRouter();
+  const {
+    searchValue,
+    setSearchValue,
+    categoryValue,
+    setCategoryValue,
+    setIsLoading,
+    categories,
+  } = useBlogContext();
+
+  // Debounce URL updates to avoid excessive navigation
+  // 300ms delay provides good UX without being too slow
+  const debouncedUpdateSearchParams = useMemo(
+    () =>
+      debounce((search: string, category: string) => {
+        setIsLoading(true);
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (search.trim()) params.set("search", search.trim());
+        if (category && category !== "all") params.set("category", category);
+
+        // Navigate to new URL with updated params
+        const queryString = params.toString();
+        const newUrl = queryString ? `/blog?${queryString}` : "/blog";
+        router.push(newUrl);
+      }, 300),
+    [router, setIsLoading]
+  );
+
+  // Handle search input changes
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setSearchValue(newValue);
+
+    // Update URL parameters with debouncing
+    debouncedUpdateSearchParams(newValue, categoryValue);
+  };
+
+  // ... rest of component
+}
+````
+
+### Complex Logic Documentation
+
+```typescript
+/**
+ * Compound component pattern implementation for Blog system
+ *
+ * This pattern allows flexible composition while sharing state through context:
+ * - Provider manages shared state (search, categories, loading)
+ * - Child components access state through context
+ * - URL state is synchronized with component state
+ * - Server-side data is passed as props to prevent hydration mismatches
+ */
+export const Blog = ({ children, initialSearch, initialCategory, initialCategories }: BlogProps) => {
+  return (
+    <BlogProvider
+      initialSearch={initialSearch}
+      initialCategory={initialCategory}
+      initialCategories={initialCategories}
+    >
+      {children}
+    </BlogProvider>
+  );
+};
+
+/**
+ * GROQ query building strategy:
+ *
+ * 1. Base query selects all posts of type "post"
+ * 2. Search filter uses OR conditions across multiple fields
+ * 3. Category filter uses "in" operator for array matching
+ * 4. Filters are conditionally added to avoid empty conditions
+ * 5. Results are ordered by publication date (newest first)
+ * 6. Related data is expanded using -> and []-> operators
+ */
+export async function getAllBlogPosts(search?: string, category?: string) {
+  // Query construction logic...
+}
+```
+
+## Documentation Maintenance
+
+### Documentation Standards
+
+```typescript
+/**
+ * Documentation Checklist:
+ *
+ * □ Public APIs documented with JSDoc
+ * □ Complex logic explained with comments
+ * □ Examples provided for non-trivial usage
+ * □ Type definitions include descriptions
+ * □ README files up to date
+ * □ Architecture decisions documented
+ * □ Performance considerations noted
+ * □ Security implications mentioned
+ * □ Accessibility features documented
+ * □ Breaking changes highlighted
+ */
+
+// Update documentation when:
+// - Adding new public APIs
+// - Changing component interfaces
+// - Modifying behavior
+// - Adding new features
+// - Fixing bugs that affect usage
+```
+
+### Automated Documentation
+
+```typescript
+// Generate component documentation
+// Use tools like react-docgen or storybook
+/**
+ * @component BlogCard
+ * @description Displays a blog post preview card
+ * @since 1.0.0
+ * @see {@link Blog} for the main blog component
+ */
+
+// API documentation generation
+/**
+ * @api {get} /api/posts Get Blog Posts
+ * @apiName GetBlogPosts
+ * @apiGroup Blog
+ * @apiVersion 1.0.0
+ *
+ * @apiParam {String} [search] Search term
+ * @apiParam {String} [category] Category slug
+ *
+ * @apiSuccess {Object[]} posts Array of blog posts
+ * @apiSuccess {String} posts._id Post ID
+ * @apiSuccess {String} posts.title Post title
+ */
+```
+
+### Documentation Templates
+
+````markdown
+<!-- Component Documentation Template -->
+
+# ComponentName
+
+Brief description of what the component does.
+
+## Usage
+
+```tsx
+<ComponentName prop1="value" prop2={value} />
+```
+````
+
+## Props
+
+| Prop  | Type   | Default | Description          |
+| ----- | ------ | ------- | -------------------- |
+| prop1 | string | -       | Description of prop1 |
+| prop2 | number | 0       | Description of prop2 |
+
+## Examples
+
+### Basic Usage
+
+```tsx
+<ComponentName prop1="example" />
+```
+
+### Advanced Usage
+
+```tsx
+<ComponentName
+  prop1="example"
+  prop2={42}
+  onEvent={(data) => console.log(data)}
+/>
+```
+
+## Accessibility
+
+- Supports keyboard navigation
+- Includes proper ARIA labels
+- Screen reader compatible
+
+## Testing
+
+```bash
+npm test ComponentName
+```
+
+```
+
+```
