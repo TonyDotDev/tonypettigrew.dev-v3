@@ -1,10 +1,8 @@
 import Link from "next/link";
-import React from "react";
 import { VscClose } from "react-icons/vsc";
 
 import { FileTypeIcon } from "./FileTypeIcon";
 import { type Label } from "./getIconName";
-import "./navigation-link.css";
 
 interface NavigationTabProps {
   label: Label;
@@ -26,7 +24,7 @@ export const NavigationTab = ({
 
   return (
     <Link
-      className={`navigation-link group text-foreground-primary flex h-full items-center gap-1 px-3 pr-1 text-sm ${
+      className={`navigation-link group text-foreground-primary flex h-full items-center gap-1 px-3 pr-1 text-sm no-underline ${
         isActive ? "bg-background" : "bg-navigation-tab-inactive-bg"
       }`}
       href={href}

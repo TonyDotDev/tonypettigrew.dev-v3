@@ -1,4 +1,3 @@
-import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { SidebarAccordion } from "@/app/components/SidebarAccordion";

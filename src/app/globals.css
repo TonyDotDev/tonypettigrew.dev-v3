@@ -78,6 +78,10 @@
   --color-navigation-file-hover-bg: var(--navigation-file-hover-bg);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   background: var(--color-background);
@@ -88,7 +92,6 @@ body {
   opacity: 1;
 }
 
-/* In globals.css */
 a {
   color: var(--color-primary);
   text-decoration: underline;
@@ -102,6 +105,10 @@ a:hover {
     white 30%
   );
   color: color-mix(in srgb, var(--color-primary) 80%, white 30%);
+}
+
+a.no-underline {
+  @apply no-underline;
 }
 
 /* Markdown Typography Styles */

@@ -1,2 +1,3 @@
 export { getReadTime } from "./getReadTime";
-export type { Post } from "./page";
+export { Categories } from "./Categories";
+export type { Post, Category } from "./types";
