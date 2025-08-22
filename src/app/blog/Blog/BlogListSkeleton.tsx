@@ -4,7 +4,7 @@ export function BlogListSkeleton() {
       {[...Array(3)].map((_, i) => (
         <div key={i} className="animate-pulse">
           <div className="bg-panel-bg mb-3 h-8 w-3/4 rounded"></div>
-          <div className="bg-panel-bg mb-2 h-4 w-full rounded"></div>
+          <div className="bg-panel-bg mb-2 h-4 w-full rounded"></div>i
           <div className="bg-panel-bg mb-2 h-4 w-2/3 rounded"></div>
           <div className="bg-panel-bg mb-5 h-4 w-1/2 rounded"></div>
           <div className="flex gap-2">

@@ -1,0 +1,216 @@
+# Cursor Rules for Writing Good Pull Request Messages
+
+## PR Message Guidelines
+
+When writing pull request messages, follow these best practices based on [Google Blockly's PR guidelines](https://developers.google.com/blockly/guides/contribute/get-started/write_a_good_pr):
+
+### 1. Communication is Key
+
+- **Before coding**: Communicate with the team about your intended work
+- **Comment on issues**: Let others know you're working on something to avoid duplicate efforts
+- **Create issues first**: If your idea isn't covered by an existing issue, create one before starting work
+
+### 2. Keep Changes Small and Focused
+
+- **Fix one problem**: Don't tackle multiple issues in a single PR
+- **Limit scope**: PRs should typically take < 8 hours to complete
+- **Use logical commits**: Split large changes into smaller, focused commits
+- **Stay organized**: Group related changes together
+
+### 3. Write Comprehensive PR Summaries
+
+Your PR summary should include:
+
+#### Essential Elements:
+
+- **Related issue**: What issue does this PR address?
+- **Change description**: What does this PR add or modify?
+- **Testing approach**: How did you test your changes?
+- **Review focus**: What areas should reviewers pay special attention to?
+- **Additional context**: Any other information reviewers need
+
+#### PR Message Structure:
+
+```markdown
+# [Type]: Brief description
+
+## 📋 Overview
+
+Clear, concise description of what this PR accomplishes.
+
+## ✨ Changes Made
+
+- Bullet points of specific changes
+- Focus on user-facing improvements
+- Include technical details when relevant
+
+## 🧪 Testing
+
+- How you tested the changes
+- What scenarios were covered
+- Any automated tests added
+
+## 📁 Files Changed
+
+- List of key files modified
+- New files created
+- Files deleted (if any)
+
+## 🔍 Review Focus
+
+- Areas that need special attention
+- Potential concerns or trade-offs
+- Questions for reviewers
+
+## 📈 Impact
+
+- Performance implications
+- Breaking changes (if any)
+- Migration notes
+```
+
+### 4. Code Quality Standards
+
+- **Follow style guides**: Adhere to project-specific coding standards
+- **Write clean code**: Use consistent naming, structure, and comments
+- **Automate checks**: Use linting tools where available
+- **Documentation**: Update docs when adding new features
+
+### 5. Testing Requirements
+
+- **Test thoroughly**: Verify changes work before submitting
+- **Cover edge cases**: Test error scenarios and edge conditions
+- **Manual testing**: For UI changes, test all demonstrated functionality
+- **Automated tests**: Add unit/integration tests for new features
+
+### 6. Commit Message Guidelines
+
+Based on [Google Blockly's commit message guide](https://developers.google.com/blockly/guides/contribute/get-started/commits), follow these conventions:
+
+#### Commit Message Format:
+
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+#### Valid Types:
+
+- **`feat`**: For commits that add new functionality
+- **`fix`**: For commits that fix bugs/errors
+- **`chore`**: For commits that complete routine/automated tasks (upgrading dependencies, etc.)
+- **`deprecate`**: For commits that deprecate functionality
+- **`release`**: For commits that relate to the release of a new version
+
+#### Breaking Changes:
+
+- Append `!` after the type for breaking changes
+- Example: `fix!: return type of workspace.paste`
+- Breaking changes require careful consideration as they may break developers using your code
+
+#### Description Requirements:
+
+- Must be non-empty and under 256 characters
+- Use imperative mood ("Add feature" not "Added feature")
+- Be concise and descriptive
+
+#### Body and Footer:
+
+- Optional but recommended for complex changes
+- Must be broken into lines of no more than 256 characters
+- Include blank line between description and body
+- Include blank line between body and footer
+
+#### Examples:
+
+```
+feat: add compound component pattern for blog with shared context
+
+fix: resolve search debouncing issue in BlogSearch component
+
+chore: update dependencies to latest versions
+
+fix!: change API return type for better type safety
+```
+
+#### Fixing Non-Conventional Commits:
+
+1. **Multiple commits**: Edit the pull request title to conform to requirements
+2. **Single commit**: Use `git commit --amend` then `git push --force origin branch-name`
+
+### 7. PR Template Usage
+
+When creating PRs, use the project's PR template and fill out all sections:
+
+- **Issue reference**: Link to related issues
+- **Change summary**: What and why
+- **Testing details**: How you verified changes
+- **Screenshots**: For UI changes
+- **Checklist**: Ensure all requirements are met
+
+### 8. Review Process
+
+- **Be responsive**: Address review comments promptly
+- **Explain decisions**: Provide context for design choices
+- **Iterate**: Be open to feedback and suggestions
+- **Keep it concise**: Make it easy for reviewers to understand changes
+
+## Examples
+
+### Good PR Title:
+
+```
+feat: add compound component pattern for blog with shared context
+```
+
+### Good PR Description:
+
+```markdown
+# 🚀 Blog Refactor: Compound Components with Shared Context
+
+## 📋 Overview
+
+Refactors blog functionality to use compound component pattern with shared context, improving performance through server-side rendering.
+
+## ✨ Changes Made
+
+- Add BlogContext for shared state management
+- Implement server-side data fetching with GROQ
+- Add debounced search with loading states
+- Create dynamic category filtering from CMS
+- Improve component architecture and maintainability
+
+## 🧪 Testing
+
+- ✅ Search functionality with debouncing
+- ✅ Category filtering and persistence
+- ✅ Loading states and error handling
+- ✅ URL parameter management
+- ✅ Responsive design verification
+
+## 📁 Files Changed
+
+- `src/app/blog/Blog/` - New compound component structure
+- `src/app/blog/getAllBlogPosts.ts` - Server-side data fetching
+- `src/app/blog/getAllCategories.ts` - Category management
+- Updated existing components for new architecture
+
+## 🔍 Review Focus
+
+- Context implementation and state management
+- Server-side rendering approach
+- Performance implications of changes
+- Component separation and reusability
+
+## 📈 Impact
+
+- 50-70% improvement in First Contentful Paint
+- Reduced client-side JavaScript bundle
+- Better SEO through server-side rendering
+- Improved maintainability and developer experience
+```
+
+Remember: **Be concise and complete** - provide enough detail for thorough review while keeping it scannable and focused.
