@@ -80,7 +80,7 @@ const Sidebar = ({
 
   return (
     <aside
-      className="bg-panel-bg flex h-screen w-[50px] flex-col items-center"
+      className="bg-panel-bg flex h-screen w-[50px] flex-shrink-0 flex-col items-center"
       role="tablist"
       aria-label="Side panel navigation"
     >

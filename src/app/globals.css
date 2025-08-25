@@ -7,7 +7,7 @@
     --foreground: #1e1e1e;
     --foreground-primary: #1e1e1e;
     --foreground-secondary: #858585;
-    --primary: #10639d;
+    --primary: #007acc;
     --code: #e53e3e;
   }
 
@@ -19,7 +19,7 @@
     --foreground-tertiary: #aeaeaf;
     --foreground-quaternary: #969696;
 
-    --primary: #10639d;
+    --primary: #007acc;
     --code: #e53e3e;
     /* Side panel */
     --panel-bg: #333333;
