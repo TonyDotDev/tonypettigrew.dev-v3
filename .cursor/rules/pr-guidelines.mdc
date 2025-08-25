@@ -18,44 +18,63 @@ Your PR summary should include:
 - **Review focus**: What areas should reviewers pay special attention to?
 - **Additional context**: Any other information reviewers need
 
+### PR Message Formatting Requirements:
+
+- **No emojis**: Use plain text without emoji characters
+- **Proper heading hierarchy**: Use markdown heading levels (##, ###, ####) for clear document structure
+- **Copy/paste friendly**: Display the markdown in a way that can be easily copied and pasted (use code blocks)
+- **Markdown format**: All PR messages must be written in markdown format
+
 ### PR Message Template:
 
 ```markdown
-# [Type]: Brief description
+## [Type]: Brief description
 
-## 📋 Overview
+### Summary
 
 Clear, concise description of what this PR accomplishes.
 
-## ✨ Changes Made
+### Key Changes
+
+#### Feature Additions
 
 - Bullet points of specific changes
 - Focus on user-facing improvements
 - Include technical details when relevant
 
-## 🧪 Testing
+#### Technical Improvements
+
+- Code quality improvements
+- Performance optimizations
+- Architecture changes
+
+### Testing
 
 - How you tested the changes
 - What scenarios were covered
 - Any automated tests added
 
-## 📁 Files Changed
+### Files Changed
 
 - List of key files modified
 - New files created
 - Files deleted (if any)
 
-## 🔍 Review Focus
+### Review Focus Areas
 
 - Areas that need special attention
 - Potential concerns or trade-offs
 - Questions for reviewers
 
-## 📈 Impact
+### Impact
 
 - Performance implications
 - Breaking changes (if any)
 - Migration notes
+
+---
+
+**Ready for review!**
 ```
 
 ## Best Practices
@@ -109,48 +128,59 @@ feat: add compound component pattern for blog with shared context
 ### Good PR Description:
 
 ```markdown
-# 🚀 Blog Refactor: Compound Components with Shared Context
+## Blog Refactor: Compound Components with Shared Context
 
-## 📋 Overview
+### Summary
 
 Refactors blog functionality to use compound component pattern with shared context, improving performance through server-side rendering.
 
-## ✨ Changes Made
+### Key Changes
+
+#### Feature Additions
 
 - Add BlogContext for shared state management
 - Implement server-side data fetching with GROQ
 - Add debounced search with loading states
 - Create dynamic category filtering from CMS
+
+#### Technical Improvements
+
 - Improve component architecture and maintainability
+- Optimize performance through server-side rendering
+- Enhance code reusability and separation of concerns
 
-## 🧪 Testing
+### Testing
 
-- ✅ Search functionality with debouncing
-- ✅ Category filtering and persistence
-- ✅ Loading states and error handling
-- ✅ URL parameter management
-- ✅ Responsive design verification
+- Search functionality with debouncing
+- Category filtering and persistence
+- Loading states and error handling
+- URL parameter management
+- Responsive design verification
 
-## 📁 Files Changed
+### Files Changed
 
 - `src/app/blog/Blog/` - New compound component structure
 - `src/app/blog/getAllBlogPosts.ts` - Server-side data fetching
 - `src/app/blog/getAllCategories.ts` - Category management
 - Updated existing components for new architecture
 
-## 🔍 Review Focus
+### Review Focus Areas
 
 - Context implementation and state management
 - Server-side rendering approach
 - Performance implications of changes
 - Component separation and reusability
 
-## 📈 Impact
+### Impact
 
 - 50-70% improvement in First Contentful Paint
 - Reduced client-side JavaScript bundle
 - Better SEO through server-side rendering
 - Improved maintainability and developer experience
+
+---
+
+**Ready for review!**
 ```
 
 ## References
