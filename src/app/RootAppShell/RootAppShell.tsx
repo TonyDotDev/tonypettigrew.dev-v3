@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 
-import { useLayoutContext } from "@/app/context";
+import { useSidebarState, useNavigationState } from "@/app/stores";
+import { useFocusManagement } from "@/app/hooks";
 import Sidebar from "./Sidebar";
 import { ExplorerContent } from "./PanelContent";
 import { NavigationTab } from "./Navigation";
@@ -32,11 +33,13 @@ const panels = [
 ];
 
 export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
-  const [activeTab, setActiveTab] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
-  const { isSidebarOpen, toggleSidebar, openEditors, handleCloseEditor } =
-    useLayoutContext();
+  const { toggleSidebar, isSidebarOpen, activeSidebarTab } = useSidebarState();
+  const { openEditors, handleCloseEditor } = useNavigationState();
+
+  // Focus management
+  const { navigationRef, explorerContentRef } = useFocusManagement();
 
   useHotkeys("shift+alt+e", () => {
     handleTabChange(0);
@@ -59,10 +62,9 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
   });
 
   const handleTabChange = (index: number) => {
-    if (index === activeTab) {
+    if (index === activeSidebarTab) {
       toggleSidebar();
     } else {
-      setActiveTab(index);
       toggleSidebar(true);
     }
   };
@@ -75,20 +77,20 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-x-hidden">
       <div className="flex">
-        <Sidebar active={activeTab} onTabChange={handleTabChange} />
+        <Sidebar isSidebarOpen={isSidebarOpen} />
         <div className="flex flex-1">
           {/* Side Panel */}
           {isSidebarOpen && (
-            <aside className="bg-panel-content-bg w-80">
+            <aside className="bg-panel-content-bg pl-sidebar w-80">
               {panels.map((panel, index) => (
                 <div
                   key={panel.id}
                   role="tabpanel"
                   id={`panel-${panel.id}`}
                   aria-labelledby={`sidebar-${panel.label.split(" ").join("-")}`}
-                  className={activeTab === index ? "block" : "hidden"}
+                  className={activeSidebarTab === index ? "block" : "hidden"}
                 >
                   <div>
                     <div className="flex h-10 items-center px-6">
@@ -96,21 +98,30 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
                         {panel.label.toUpperCase()}
                       </h2>
                     </div>
-                    <div>{panel.component && <panel.component />}</div>
+                    <div ref={explorerContentRef}>
+                      {panel.component && <panel.component />}
+                    </div>
                   </div>
                 </div>
               ))}
             </aside>
           )}
           {/* Main Content */}
-          <div className="flex h-screen flex-1 flex-col">
+          <div
+            className={`flex h-screen flex-1 flex-col ${isSidebarOpen ? "w-full pl-0" : "pl-sidebar w-screen"}`}
+          >
             <nav
+              ref={navigationRef}
+              tabIndex={-1}
+              aria-live="polite"
+              aria-label="Navigation tabs"
+              role="tablist"
               className={`h-9 ${
-                hasOpenEditors ? "bg-navigation-bg" : "bg-background"
+                hasOpenEditors ? "bg-navigation-bg" : "bg-transparent"
               }`}
             >
               <ul className="flex h-full items-center gap-0.5 overflow-x-auto">
-                {openEditors.map((editor) => {
+                {openEditors.map((editor, index) => {
                   const isActive = pathname === editor.href;
                   const handleClose = () => {
                     handleCloseEditor(editor);
@@ -126,13 +137,14 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
                         href={editor.href}
                         isActive={isActive}
                         handleClose={handleClose}
+                        index={index}
                       />
                     </li>
                   );
                 })}
               </ul>
             </nav>
-            <main className="bg-background text-foreground-primary smooth-scroll min-h-0 flex-1 overflow-y-auto">
+            <main className="bg-background text-foreground-primary min-h-0 flex-1 overflow-y-auto pb-12">
               <div className="mx-auto max-w-2xl px-4 py-8">{children}</div>
             </main>
           </div>

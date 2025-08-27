@@ -33,7 +33,8 @@
     "sanity": "^4.4.1",
     "sanity-plugin-markdown": "^6.0.0",
     "styled-components": "^6.1.19",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

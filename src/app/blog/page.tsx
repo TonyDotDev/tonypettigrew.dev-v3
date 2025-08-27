@@ -1,6 +1,8 @@
-import { Blog, BlogSearch, BlogList } from "./Blog";
+import { BlogProvider } from "@/app/context";
+import { BlogSearch, BlogList } from "@/app/components/blog";
 import { getAllBlogPosts } from "./getAllBlogPosts";
 import { getAllCategories } from "./getAllCategories";
+import { Typography } from "@/app/components/typography";
 
 interface BlogPageProps {
   searchParams: {
@@ -20,20 +22,21 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
 
   return (
     <div>
-      <h1 className="mb-2 text-5xl font-bold">Blog Posts</h1>
-      <p className="text-foreground-secondary mb-4">
+      <Typography variant="h1" className="mb-2">
+        Blog Posts
+      </Typography>
+      <Typography variant="p" as="p" color="secondary" className="mb-4">
         A collection of my thoughts and experiences.
-      </p>
-
-      <Blog
+      </Typography>
+      <BlogProvider
         initialSearch={search || ""}
         initialCategory={category || ""}
-        initialCategories={categories}
+        initialCategories={categories || []}
       >
         <BlogSearch />
 
         <BlogList posts={posts} />
-      </Blog>
+      </BlogProvider>
     </div>
   );
 }

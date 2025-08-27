@@ -8,6 +8,7 @@ import { AiOutlineSpotify } from "react-icons/ai";
 import { BsAlt, BsShift } from "react-icons/bs";
 
 import Tooltip from "@/app/components/Tooltip";
+import { useSidebarState } from "@/app/stores";
 
 const iconSize = 24;
 const icons = [
@@ -68,45 +69,55 @@ const icons = [
   },
 ];
 
-const Sidebar = ({
-  active = 0,
-  onTabChange,
-}: {
-  active?: number;
-  onTabChange?: (index: number) => void;
-}) => {
+const Sidebar = ({ isSidebarOpen }: { isSidebarOpen: boolean }) => {
+  const { activeSidebarTab, setActiveSidebarTab, toggleSidebar } =
+    useSidebarState();
+
   const safeId = (label: string) => label.split(" ").join("-");
   const safeAnchorId = (label: string) => `sidebar-${safeId(label)}`;
 
   return (
     <aside
-      className="bg-panel-bg flex h-screen w-[50px] flex-shrink-0 flex-col items-center"
+      className="bg-panel-bg w-sidebar fixed flex h-screen flex-shrink-0 flex-col items-center"
       role="tablist"
       aria-label="Side panel navigation"
     >
-      {icons.map((item, idx) => (
-        <Tooltip
-          key={item.label}
-          content={
-            <span className="flex items-center">
-              {item.label} ({item.keyboardShortcut})
-            </span>
-          }
-          anchorId={safeAnchorId(item.label)}
-        >
-          <button
-            id={safeAnchorId(item.label)}
-            role="tab"
-            aria-selected={active === idx}
-            aria-controls={`panel-${item.id}`}
-            className={`border-panel-bg m-0 flex w-full cursor-pointer appearance-none justify-center border-0 border-r-2 py-[12px] shadow-none outline-none ${active === idx ? "border-l-panel-highlight text-panel-highlight border-l-2" : "text-panel-inactive hover:text-panel-highlight border-l-panel-bg border-l-2"} `}
-            aria-label={item.label}
-            onClick={() => onTabChange?.(idx)}
+      {icons.map((item, idx) => {
+        const isActive = activeSidebarTab === idx;
+
+        return (
+          <Tooltip
+            key={item.label}
+            content={
+              <span className="flex items-center">
+                {item.label} ({item.keyboardShortcut})
+              </span>
+            }
+            anchorId={safeAnchorId(item.label)}
           >
-            {item.icon}
-          </button>
-        </Tooltip>
-      ))}
+            <button
+              id={safeAnchorId(item.label)}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`panel-${item.id}`}
+              className={`border-panel-bg border-border-panel-bg m-0 flex w-full cursor-pointer appearance-none justify-center border-1 border-r-2 border-l-2 py-[12px] shadow-none transition-all duration-300 outline-none ${isActive && isSidebarOpen ? "border-l-panel-highlight text-panel-highlight" : "text-panel-inactive hover:text-panel-highlight border-l-panel-bg"}`}
+              aria-label={item.label}
+              onClick={() => {
+                if (isActive && isSidebarOpen) {
+                  // If clicking the active tab and sidebar is open, close it
+                  toggleSidebar(false);
+                } else {
+                  // If clicking an inactive tab or sidebar is closed, open sidebar and switch to that tab
+                  toggleSidebar(true);
+                  setActiveSidebarTab(idx);
+                }
+              }}
+            >
+              {item.icon}
+            </button>
+          </Tooltip>
+        );
+      })}
     </aside>
   );
 };

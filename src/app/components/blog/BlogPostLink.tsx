@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useLayoutContext } from "@/app/context";
+
+import { useNavigationState } from "@/app/stores";
 
 interface BlogPostLinkProps {
   post: {
@@ -13,7 +14,7 @@ interface BlogPostLinkProps {
 }
 
 export const BlogPostLink = ({ post }: BlogPostLinkProps) => {
-  const { handleOpenEditor, openEditors } = useLayoutContext();
+  const { handleOpenEditor, openEditors } = useNavigationState();
 
   const handleAddNavigationTab = () => {
     const editorAlreadyOpen = openEditors.find(
