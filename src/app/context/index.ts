@@ -1,1 +1,1 @@
-export { LayoutProvider, useLayoutContext } from "./layout";
+export { BlogProvider, useBlogContext } from "./blog";

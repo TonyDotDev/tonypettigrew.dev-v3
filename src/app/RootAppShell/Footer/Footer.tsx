@@ -59,7 +59,7 @@ const FooterIcon = ({
 
 export const Footer = () => {
   return (
-    <footer className="bg-primary text-foreground-primary fixed bottom-0 flex w-full items-center justify-between py-1 pr-4 pl-[50px]">
+    <footer className="bg-primary text-foreground-primary pl-sidebar fixed bottom-0 flex w-full items-center justify-between py-1 pr-4">
       <div aria-hidden="true" className="hidden items-center gap-4 md:flex">
         <FooterIcon icon={<IoIosGitBranch />} label="main" />
         <div className="flex items-center gap-1">

@@ -1,11 +1,11 @@
 import { groq } from "next-sanity";
 import { client } from "@/sanity/lib/client";
-import type { Post } from "./types";
+import type { Post } from "@/app/types";
 
-export async function getAllBlogPosts(
+export const getAllBlogPosts = async (
   search?: string,
   category?: string,
-): Promise<Post[]> {
+): Promise<Post[]> => {
   const searchFilter = search
     ? groq`&& (
         title match "*${search}*" || 
@@ -42,4 +42,4 @@ export async function getAllBlogPosts(
   }`;
 
   return client.fetch(query);
-}
+};

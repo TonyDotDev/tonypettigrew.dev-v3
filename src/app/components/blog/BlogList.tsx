@@ -1,10 +1,11 @@
 "use client";
-
-import { useBlogContext } from "./BlogContext";
-import { BlogListSkeleton } from "./BlogListSkeleton";
-import { Categories } from "@/app/blog";
-import type { Post } from "../types";
 import Link from "next/link";
+
+import { useBlogContext } from "@/app/context";
+import { Categories } from "@/app/blog";
+import type { Post } from "@/app/types";
+import { Typography } from "@/app/components/typography";
+import { BlogListSkeleton } from "./BlogListSkeleton";
 
 interface BlogListProps {
   posts: Post[];
@@ -20,11 +21,11 @@ export function BlogList({ posts }: BlogListProps) {
   if (posts.length === 0) {
     return (
       <div className="py-12 text-center">
-        <p className="text-foreground-secondary text-lg">
+        <Typography variant="h4" as="p" color="secondary">
           {searchValue || categoryValue !== "all"
             ? `No posts found for "${searchValue}"${categoryValue !== "all" ? ` in ${categoryValue ? categoryValue : "all categories"}` : ""}.`
             : "No posts found matching your criteria."}
-        </p>
+        </Typography>
       </div>
     );
   }
@@ -34,14 +35,16 @@ export function BlogList({ posts }: BlogListProps) {
       {posts.map((post) => (
         <li key={post._id}>
           <div className="flex flex-col">
-            <Link className="no-underline" href={`/blog/${post.slug.current}`}>
-              <h3 className="text-foreground-primary mb-3 text-2xl leading-tight font-bold">
+            <Link
+              className="mb-4 no-underline"
+              href={`/blog/${post.slug.current}`}
+            >
+              <Typography variant="h3" as="h3" color="primary">
                 {post.title}
-              </h3>
-
-              <p className="text-foreground-secondary text-md mb-5 leading-relaxed">
+              </Typography>
+              <Typography variant="p" as="p" color="secondary">
                 {post.excerpt}
-              </p>
+              </Typography>
             </Link>
             <Categories categories={post.categories} />
           </div>

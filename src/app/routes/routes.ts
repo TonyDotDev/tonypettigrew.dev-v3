@@ -2,7 +2,7 @@ import { type Label } from "@/app/RootAppShell/Navigation";
 
 export const routes = {
   profile: {
-    label: "Profile.tsx" as Label,
+    label: "Home.tsx" as Label,
     href: "/",
   },
   blog: {
@@ -22,8 +22,3 @@ export const routes = {
     href: "/contact",
   },
 } as const;
-
-export type Route = {
-  label: Label;
-  href: string;
-};

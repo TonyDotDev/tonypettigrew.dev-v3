@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MdSearch } from "react-icons/md";
 import debounce from "lodash/debounce";
 
-import { useBlogContext } from "./BlogContext";
+import { useBlogContext } from "@/app/context";
 
 export function BlogSearch() {
   const router = useRouter();

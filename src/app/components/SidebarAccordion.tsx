@@ -7,19 +7,20 @@ export const SidebarAccordion = ({
   sectionId,
   title,
   children,
+  isExpanded,
+  toggleExpanded,
+  isHighlighted,
 }: {
   id?: string;
   sectionId?: string;
   title: string;
   children: React.ReactNode;
+  isExpanded?: boolean;
+  toggleExpanded?: () => void;
+  isHighlighted?: boolean;
 }) => {
-  const [expanded, setExpanded] = useState(false);
   const [contentHeight, setContentHeight] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
-
-  const handleToggle = () => {
-    setExpanded((prevState) => !prevState);
-  };
 
   // Measure content height when component mounts or children change
   useEffect(() => {
@@ -33,19 +34,23 @@ export const SidebarAccordion = ({
     sectionId || `sidebar-accordion-section-${uuidv4()}`;
 
   return (
-    <div>
+    <div
+      className={`border-panel-content-bg border-1 transition-all delay-300 ${isHighlighted ? "border-primary animate-pulse" : ""}`}
+    >
       <h3 className="px-1 py-1 leading-[0.5]">
         <button
           type="button"
-          aria-expanded={expanded}
-          onClick={handleToggle}
+          aria-expanded={isExpanded}
+          onClick={toggleExpanded}
           id={accordionId}
           aria-controls={accordionSectionId}
           className="w-full cursor-pointer"
         >
           <span className="flex items-center gap-1">
             <span>
-              <VscChevronRight className={` ${expanded ? "rotate-90" : ""}`} />
+              <VscChevronRight
+                className={` ${isExpanded ? "rotate-90" : ""}`}
+              />
             </span>
             <span className="text-foreground-secondary text-xs font-semibold uppercase">
               {title}
@@ -59,8 +64,8 @@ export const SidebarAccordion = ({
         aria-labelledby={accordionId}
         className="overflow-hidden transition-all duration-100 ease-in-out"
         style={{
-          maxHeight: expanded ? `${contentHeight}px` : "0px",
-          opacity: expanded ? 1 : 0,
+          maxHeight: isExpanded ? `${contentHeight}px` : "0px",
+          opacity: isExpanded ? 1 : 0,
         }}
       >
         <div ref={contentRef}>{children}</div>
