@@ -1,65 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { type GitHubRepo, type GitHubReposResponse } from "@/app/types";
+import { fetchGitHubResource } from "@/app/api/github/utils";
+import { GITHUB_API_ENDPOINTS } from "@/app/api/github/constants";
 
 // Environment validation
 const envSchema = z.object({
   GITHUB_USERNAME: z.string().min(1),
-  // Optional token for higher rate limits and private repos
-  GITHUB_TOKEN: z.string().optional(),
 });
 
 const env = envSchema.parse({
   GITHUB_USERNAME: process.env.GITHUB_USERNAME,
-  GITHUB_TOKEN: process.env.GITHUB_TOKEN,
 });
-
-// Fetch repositories from GitHub API
-async function fetchGitHubRepos(): Promise<GitHubRepo[]> {
-  const searchParams = new URLSearchParams({
-    type: "public",
-    sort: "updated",
-    direction: "desc",
-    per_page: "30",
-  });
-
-  // Build headers - token is optional for public repos
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "tonypettigrew.dev",
-  };
-
-  // Add authorization header if token is available
-  if (env.GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
-  }
-
-  const response = await fetch(
-    `https://api.github.com/users/${env.GITHUB_USERNAME}/repos?${searchParams}`,
-    {
-      headers,
-      next: { revalidate: 300 }, // Cache for 5 minutes
-    },
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("GitHub API error:", response.status, errorText);
-
-    if (response.status === 401) {
-      throw new Error("GitHub authentication failed");
-    } else if (response.status === 403) {
-      throw new Error("GitHub API rate limit exceeded");
-    } else if (response.status === 404) {
-      throw new Error("GitHub user not found");
-    } else {
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
-  }
-
-  const repos: GitHubRepo[] = await response.json();
-  return repos;
-}
 
 const featuredRepoNames = [
   "tonypettigrew.dev-v3",
@@ -70,13 +22,13 @@ const featuredRepoNames = [
 const pinnedRepoNames = [
   "tonypettigrew.dev",
   "tonypettigrew.dev-v3",
-  "express-ts-boilderplate",
+  "express-ts-boilerplate",
   "generator-react-tsx-component",
   "notion-widget-spotify-now-playing",
   "qbench-bi-dashboard",
 ];
 
-export async function GET(request: NextRequest) {
+export const GET = async (request: NextRequest) => {
   try {
     // Validate query parameters
     const { searchParams } = new URL(request.url);
@@ -86,7 +38,11 @@ export async function GET(request: NextRequest) {
     try {
       validatedParams = z
         .object({
-          featured: z.coerce.boolean().optional().default(false),
+          featured: z
+            .enum(["true", "false"])
+            .transform((val) => val === "true")
+            .optional()
+            .default("false"),
         })
         .parse(queryParams);
     } catch (error) {
@@ -102,8 +58,19 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
+    const defaultSearchParams = new URLSearchParams({
+      type: "public",
+      sort: "updated",
+      direction: "desc",
+      per_page: "100",
+    });
+
     // Fetch repositories
-    const repos = await fetchGitHubRepos();
+    const repos = await fetchGitHubResource<GitHubRepo[]>(
+      `${GITHUB_API_ENDPOINTS.USER_REPOS(env.GITHUB_USERNAME)}?${defaultSearchParams}`,
+    );
+
+    console.log(validatedParams.featured, "validatedParams.featured");
 
     // Filter based on featured parameter
     const filteredRepos = repos.filter((repo) => {
@@ -162,4 +129,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+};

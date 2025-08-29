@@ -5,6 +5,7 @@ import { SidebarAccordion } from "@/app/components/SidebarAccordion";
 import { NavigationFile } from "@/app/RootAppShell/Navigation";
 import { navigateToAdjacentEditor } from "@/app/RootAppShell/navigateToAdjacentEditor";
 import { EXPLORER_ACCORDIONS } from "@/app/constants";
+import { PanelContentDivider } from "./PanelContentDivider";
 
 export const ExplorerContent = () => {
   const pathname = usePathname();
@@ -51,7 +52,7 @@ export const ExplorerContent = () => {
           })}
         </ul>
       </SidebarAccordion>
-      <div className="h-px bg-gray-600" />
+      <PanelContentDivider />
       <SidebarAccordion
         isExpanded={
           explorerAccordions[EXPLORER_ACCORDIONS.WWW_TONYPETTIGREW_DEV]
@@ -67,7 +68,7 @@ export const ExplorerContent = () => {
       >
         <p>Pages</p>
       </SidebarAccordion>
-      <div className="h-px bg-gray-600" />
+      <PanelContentDivider />
       <SidebarAccordion
         isExpanded={explorerAccordions[EXPLORER_ACCORDIONS.OUTLINE]}
         toggleExpanded={() =>
@@ -80,7 +81,7 @@ export const ExplorerContent = () => {
       >
         <p>outline</p>
       </SidebarAccordion>
-      <div className="h-px bg-gray-600" />
+      <PanelContentDivider />
       <SidebarAccordion
         isExpanded={explorerAccordions[EXPLORER_ACCORDIONS.TIMELINE]}
         toggleExpanded={() =>
