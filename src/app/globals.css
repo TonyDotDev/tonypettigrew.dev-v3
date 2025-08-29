@@ -21,6 +21,7 @@
 
     --primary: #007acc;
     --code: #e53e3e;
+    --error: theme(colors.red.500);
     /* Side panel */
     --panel-bg: #333333;
     --panel-highlight: #ffffff;
@@ -29,6 +30,7 @@
     /* Side panel content */
     --panel-content-bg: #252526;
     --panel-content-header: #bbbbbb;
+    --panel-content-divider: theme(colors.gray.600);
 
     /* Tooltip */
     --tooltip-bg: #252526;
@@ -56,6 +58,7 @@
 
   --color-primary: var(--primary);
   --color-code: var(--code);
+  --color-error: var(--error);
 
   /* Side panel */
   --color-panel-bg: var(--panel-bg);
@@ -70,6 +73,8 @@
   --color-tooltip-fg: var(--tooltip-fg);
   --color-tooltip-border: var(--tooltip-border);
 
+  --color-panel-content-divider: var(--panel-content-divider);
+
   /* Navigation */
   --color-navigation-bg: var(--navigation-bg);
   --color-navigation-tab-inactive-bg: var(--navigation-tab-inactive-bg);
@@ -80,9 +85,6 @@
 
   /* Layout */
   --sidebar-width: theme(spacing.12);
-
-  /* Home Page */
-  --home-page-image-size: theme(spacing.32);
 }
 
 @layer utilities {
@@ -92,14 +94,6 @@
 
   .w-sidebar {
     width: var(--sidebar-width);
-  }
-
-  .h-home-page-image {
-    height: var(--home-page-image-size);
-  }
-
-  .w-home-page-image {
-    width: var(--home-page-image-size);
   }
 
   /* Custom centered bounce animation */

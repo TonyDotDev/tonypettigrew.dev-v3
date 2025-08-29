@@ -1,73 +1,28 @@
 "use client";
 
-import React from "react";
+import { Suspense } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useHotkeys } from "react-hotkeys-hook";
 
 import { useSidebarState, useNavigationState } from "@/app/stores";
 import { useFocusManagement } from "@/app/hooks";
 import Sidebar from "./Sidebar";
-import { ExplorerContent } from "./PanelContent";
 import { NavigationTab } from "./Navigation";
+import { panels } from "./constants";
 import { navigateToAdjacentEditor } from "./navigateToAdjacentEditor";
 import { Footer } from "./Footer";
-
-const panels = [
-  {
-    id: "explorer",
-    label: "Explorer",
-    component: ExplorerContent,
-  },
-  { id: "search", label: "Search", content: "Search panel content" },
-  {
-    id: "source-control",
-    label: "My Featured Repos",
-    content: "Source Control panel content",
-  },
-  {
-    id: "chat",
-    label: "Ask About My Experience",
-    content: "Chat panel content",
-  },
-  { id: "spotify", label: "My Playlists", content: "My Playlists" },
-];
+import { useInitializeHotkeys } from "./useInitializeHotkeys";
+import { SidebarContentSkeleton } from "./SidebarContentSkeleton";
 
 export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { toggleSidebar, isSidebarOpen, activeSidebarTab } = useSidebarState();
+  const { isSidebarOpen, activeSidebarTab } = useSidebarState();
   const { openEditors, handleCloseEditor } = useNavigationState();
 
   // Focus management
   const { navigationRef, explorerContentRef } = useFocusManagement();
 
-  useHotkeys("shift+alt+e", () => {
-    handleTabChange(0);
-  });
-
-  useHotkeys("shift+alt+f", () => {
-    handleTabChange(1);
-  });
-
-  useHotkeys("shift+alt+g", () => {
-    handleTabChange(2);
-  });
-
-  useHotkeys("shift+alt+c", () => {
-    handleTabChange(3);
-  });
-
-  useHotkeys("shift+alt+s", () => {
-    handleTabChange(4);
-  });
-
-  const handleTabChange = (index: number) => {
-    if (index === activeSidebarTab) {
-      toggleSidebar();
-    } else {
-      toggleSidebar(true);
-    }
-  };
+  useInitializeHotkeys();
 
   const hasOpenEditors = openEditors.length > 0;
 
@@ -75,6 +30,7 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
   if (pathname.includes("/studio")) {
     return <>{children}</>;
   }
+  // TODO: ErrorBoundary, Better Fallbacks for Suspense BELOW
 
   return (
     <div className="flex flex-col overflow-x-hidden">
@@ -83,7 +39,7 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
         <div className="flex flex-1">
           {/* Side Panel */}
           {isSidebarOpen && (
-            <aside className="bg-panel-content-bg pl-sidebar w-80">
+            <aside className="bg-panel-content-bg pl-sidebar h-screen w-80 overflow-y-auto">
               {panels.map((panel, index) => (
                 <div
                   key={panel.id}
@@ -99,7 +55,14 @@ export const RootAppShell = ({ children }: { children: React.ReactNode }) => {
                       </h2>
                     </div>
                     <div ref={explorerContentRef}>
-                      {panel.component && <panel.component />}
+                      {/* TODO: ErrorBoundary, Better Fallbacks */}
+                      <Suspense
+                        fallback={
+                          <SidebarContentSkeleton label={panel.label} />
+                        }
+                      >
+                        {panel.component && <panel.component />}
+                      </Suspense>
                     </div>
                   </div>
                 </div>

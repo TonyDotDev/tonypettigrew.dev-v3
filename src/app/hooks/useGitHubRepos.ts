@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { type GitHubReposResponse } from "@/app/types";
 
-async function fetchGitHubRepos(
+const fetchGitHubRepos = async (
   featured: boolean = false,
-): Promise<GitHubReposResponse> {
+): Promise<GitHubReposResponse> => {
   const response = await fetch(`/api/github/repos?featured=${featured}`);
 
   if (!response.ok) {
@@ -11,7 +11,7 @@ async function fetchGitHubRepos(
   }
 
   return response.json();
-}
+};
 
 export function useGitHubRepos(featured: boolean = false) {
   return useQuery({

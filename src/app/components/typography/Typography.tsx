@@ -23,9 +23,14 @@ type Size =
   | "5xl"
   | "6xl";
 
-type TypographyColor = "primary" | "secondary" | "tertiary" | "quaternary";
+type TypographyColor =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "quaternary"
+  | "error";
 
-interface TypographyProps {
+interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
   as?: React.ElementType;
   variant: TypographyVariant;
   children: React.ReactNode;
@@ -51,6 +56,7 @@ const colorStyles: Record<TypographyColor, string> = {
   secondary: "text-foreground-secondary",
   tertiary: "text-foreground-tertiary",
   quaternary: "text-foreground-quaternary",
+  error: "text-error",
 };
 
 export const Typography = forwardRef<HTMLElement, TypographyProps>(
@@ -69,9 +75,13 @@ export const Typography = forwardRef<HTMLElement, TypographyProps>(
     const Component = as || variant;
     const baseStyles = variantStyles[variant];
     const colorStyle = colorStyles[color];
-    const sizeStyle = size ? `text-${size}` : "";
-    const combinedClassName =
-      `${baseStyles} ${colorStyle} ${sizeStyle} ${className}`.trim();
+
+    // If size prop is provided, override the variant's text size
+    const textSizeClass = size ? `text-${size}` : "";
+    const baseStylesWithoutSize = baseStyles.replace(/text-\w+/g, "").trim();
+    const combinedClassName = size
+      ? `${baseStylesWithoutSize} ${colorStyle} ${textSizeClass} ${className}`.trim()
+      : `${baseStyles} ${colorStyle} ${className}`.trim();
 
     return (
       <Component ref={ref} className={combinedClassName} {...props}>

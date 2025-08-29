@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Suspense, lazy, useEffect, useState } from "react";
 import { VscArrowDown } from "react-icons/vsc";
 import { GoDownload } from "react-icons/go";
@@ -11,7 +10,8 @@ import { Typography } from "@/app/components/typography";
 import { useLayoutStore } from "@/app/stores";
 import { useFocusManagement, useGitHubRepos } from "@/app/hooks";
 import { EXPLORER_ACCORDIONS } from "@/app/constants";
-import Button from "@/app/components/button";
+import Button from "@/app/components/Button";
+import Avatar from "@/app/components/Avatar";
 
 const RepositoriesSection = lazy(() =>
   import("@/app/home/sections").then((mod) => ({
@@ -117,15 +117,13 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-y-24">
       <section className="relative mb-8 flex h-[calc(100vh-120px)] flex-col items-center justify-center gap-5 text-center sm:mb-12 sm:gap-8">
-        <div className="sm:h-home-page-image sm:w-home-page-image relative h-24 w-24 flex-shrink-0">
-          <Image
-            src="/tony-pettigrew.webp"
-            alt="Tony Pettigrew"
-            fill
-            className="rounded-full object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        </div>
+        <Avatar
+          src="/tony-pettigrew.webp"
+          alt="Tony Pettigrew"
+          size="lg"
+          className="relative flex-shrink-0 sm:h-32 sm:w-32"
+        />
+
         <div className="flex flex-col gap-2">
           <Typography variant="h1">Tony Pettigrew</Typography>
           <Typography variant="h5" as="p">

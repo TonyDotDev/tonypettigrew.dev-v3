@@ -22,7 +22,20 @@ export interface GitHubRepo {
   license: GitHubLicense | null;
 }
 
-// GitHub License type
+export interface GitHubUser {
+  id: number;
+  name: string;
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  followers: number;
+  following: number;
+  bio: string | null;
+  location: string | null;
+  hireable: boolean | null;
+}
+
+// GitHub field type
 interface GitHubLicense {
   key: string;
   name: string;
@@ -33,4 +46,8 @@ interface GitHubLicense {
 export interface GitHubReposResponse {
   repos: GitHubRepo[];
   total: number;
+}
+
+export interface GitHubUserResponse {
+  user: GitHubUser;
 }
